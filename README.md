@@ -33,6 +33,34 @@ The domain logic in `pawpal_system.py` (used by `main.py` and `app.py`) supports
 
 Run `python main.py` for a scripted demo (out-of-order insert → sorted output, filters, recurring completion, duplicate-time warning).
 
+## Testing PawPal+
+
+### How to run tests
+
+From the project root (with dependencies installed):
+
+```bash
+python -m pytest
+```
+
+Use `python -m pytest -v` for per-test names.
+
+### What is covered
+
+Automated tests in `tests/test_pawpal.py` check:
+
+- **Task sorting** — tasks inserted as 14:00 / 08:00 / 09:30 come out ordered 08:00 → 09:30 → 14:00.
+- **Recurring task creation** — completing a **daily** task keeps the completed row and adds the next occurrence with `due_date` moved forward by one day.
+- **Conflict detection** — two tasks at the same clock time (different pets) yield at least one warning mentioning that time.
+- **Filtering** — `filter_tasks` by `pet_name` and by `completed` behaves as expected.
+- **Edge cases** — a pet with no tasks exposes empty lists without errors; original tests still cover `mark_complete` and `add_task`.
+
+### Confidence level
+
+**Confidence: ★★★★☆**
+
+The main scheduling behaviors are covered by automated tests, including sorting, recurring tasks, conflict detection, and basic filtering. More advanced cases (e.g. overlapping time *ranges* rather than duplicate clock strings) are intentionally out of scope for this lightweight scheduler and are not tested here.
+
 ## Getting started
 
 ### Setup
