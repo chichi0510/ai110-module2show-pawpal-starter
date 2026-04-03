@@ -4,17 +4,17 @@
 
 **a. Initial design**
 
-I created four main classes: **Pet**, **Task**, **Owner**, and **Schedule**.
+I created four main classes: **Pet**, **Task**, **Owner**, and **Scheduler**.
 
 - **Pet** stores information about each animal (name, species, age).
 - **Task** represents pet care activities like feeding, walking, or grooming. Each task is linked to a specific pet and includes a duration.
 - **Owner** manages relationships with multiple pets they own.
-- **Schedule** keeps track of tasks that need to be completed, organizing them into a daily plan.
+- **Scheduler** applies sorting, filtering, and conflict checks to the owner’s tasks for a daily plan.
 
 The design follows these key relationships:
 - Owner has a 1-to-many relationship with Pet (one owner can have many pets)
 - Task has a many-to-one relationship with Pet (many tasks can apply to one pet)
-- Schedule has a 1-to-many relationship with Task (one schedule contains many tasks)
+- Scheduler reads from Owner (and thus Pet → Task) rather than owning tasks directly
 
 **b. Design changes**
 
@@ -41,13 +41,11 @@ These changes align better with the scenario requirement: *"Consider constraints
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+The scheduler works with **due dates** (`Task.due_date`) plus clock time (`"HH:MM"`), **frequency** (`once` / `daily` / `weekly`), and **completion** state. For a given day it lists incomplete tasks due that day, sorts by time, can filter by pet or completed flag, and runs a lightweight **conflict check**: it only flags when two or more tasks share the **exact same** time string (e.g. two different pets both at `09:00`). It does **not** model duration blocks or overlapping intervals.
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+My scheduler only checks for **exact time conflicts** (same `HH:MM`), not overlapping time ranges (e.g. 09:00–10:00 vs 09:30–10:30). That keeps the logic small, easy to read, and enough for a first “are two things scheduled at the same clock slot?” warning. The downside is it would not catch subtler overlaps if tasks had start/end durations. For PawPal+ as a planning sketch, that tradeoff is reasonable; a production calendar would need intervals and busy/free logic.
 
 ---
 
@@ -62,6 +60,8 @@ These changes align better with the scenario requirement: *"Consider constraints
 
 - Describe one moment where you did not accept an AI suggestion as-is.
 - How did you evaluate or verify what the AI suggested?
+
+For **conflict detection**, you can paste `detect_time_conflicts` into an AI and ask how to simplify for readability or performance. Compare its answer with the current approach: a short loop plus `defaultdict` is easy to follow; a one-liner might be fewer lines but harder to debug. Choose based on what *you* find clearer, not only what is shorter.
 
 ---
 

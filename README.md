@@ -22,6 +22,17 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## Smarter Scheduling
+
+The domain logic in `pawpal_system.py` (used by `main.py` and `app.py`) supports:
+
+- **Sort tasks by time** — `Scheduler.sort_by_time` orders tasks by `due_date`, then by clock time (`HH:MM`).
+- **Filter by pet or completion status** — `Scheduler.filter_tasks` can narrow a list with `completed=True/False` and/or `pet_name="..."`.
+- **Auto-create recurring tasks** — `Pet.mark_task_complete` marks a task done; for `daily` / `weekly` frequencies it appends the next occurrence with an updated `due_date` (`once` does not repeat).
+- **Detect simple scheduling conflicts** — `Scheduler.detect_time_conflicts` warns when two or more tasks share the **exact same** time string (lightweight; not full interval overlap).
+
+Run `python main.py` for a scripted demo (out-of-order insert → sorted output, filters, recurring completion, duplicate-time warning).
+
 ## Getting started
 
 ### Setup

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import time
+from datetime import date, time
 
 import streamlit as st
 
@@ -83,14 +83,16 @@ st.markdown("### Schedule a task")
 st.caption("Creates a **`Task`**, then **`pet.add_task(task)`** for the pet you select.")
 
 with st.form("add_task_form", clear_on_submit=True):
-    t1, t2, t3, t4 = st.columns(4)
+    t1, t2, t3, t4, t5 = st.columns(5)
     with t1:
         task_desc = st.text_input("Description", value="Morning walk")
     with t2:
         task_time = st.time_input("Time", value=time(9, 0))
     with t3:
-        task_freq = st.selectbox("Frequency", ["daily", "weekly", "once"])
+        task_due = st.date_input("Due date", value=date.today())
     with t4:
+        task_freq = st.selectbox("Frequency", ["daily", "weekly", "once"])
+    with t5:
         pet_names = [p.name for p in owner.pets]
         task_pet = st.selectbox("Pet", pet_names) if pet_names else None
     task_submitted = st.form_submit_button("Add task", disabled=not owner.pets)
@@ -98,7 +100,7 @@ with st.form("add_task_form", clear_on_submit=True):
 if task_submitted and owner.pets and task_pet:
     tt = task_time
     clock = f"{tt.hour:02d}:{tt.minute:02d}"
-    new_task = Task(task_desc.strip() or "Task", clock, task_freq)
+    new_task = Task(task_desc.strip() or "Task", clock, task_freq, due_date=task_due)
     target = _pet_by_name(task_pet)
     if target is not None:
         target.add_task(new_task)
@@ -115,6 +117,7 @@ if owner.pets and any(p.tasks for p in owner.pets):
                 {
                     "Pet": pet.name,
                     "Description": task.description,
+                    "Due": str(task.due_date),
                     "Time": task.time,
                     "Frequency": task.frequency,
                     "Done": task.is_completed,
@@ -127,14 +130,17 @@ else:
 st.divider()
 
 st.subheader("Build schedule")
-st.caption("`Scheduler(owner)` → incomplete tasks today, sorted by clock time.")
+st.caption("`Scheduler(owner)` → due today, sorted by time; conflicts are exact same HH:MM.")
 
 if st.button("Generate schedule"):
     scheduler = Scheduler(owner)
-    tasks = scheduler.sort_tasks(scheduler.get_todays_tasks())
+    today_tasks = scheduler.get_todays_tasks()
+    for msg in scheduler.detect_time_conflicts(today_tasks):
+        st.warning(msg)
+    tasks = scheduler.sort_by_time(today_tasks)
     st.markdown("**Today's schedule**")
     if not tasks:
-        st.warning("No tasks to show yet.")
+        st.info("No tasks due today.")
     else:
         for task in tasks:
             st.write(f"[{task.time}] {task.description} ({_pet_name_for_task(task)})")
