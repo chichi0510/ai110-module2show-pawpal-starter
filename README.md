@@ -4,16 +4,13 @@
 
 The **domain model** lives in `pawpal_system.py` (**Owner → Pet → Task**, plus **Scheduler**). The **Streamlit UI** (`app.py`) calls the scheduler so users see that behavior, not a raw task dump.
 
-### Demo screenshot (use your own)
+### Demo screenshot
 
-There is **no bundled “official” UI screenshot** in this repo. Anything that looked like a screenshot but did not match your window was only a **placeholder illustration**, not a capture of your running app.
+Streamlit app (`streamlit run app.py`), captured from the author’s machine:
 
-To add a **real** screenshot for README or submissions:
+![PawPal+ Streamlit UI](docs/demo.jpeg)
 
-1. Run `streamlit run app.py` and set up pets/tasks the way you want.
-2. Capture the browser window (e.g. macOS: **Cmd+Shift+4**, or the browser’s screenshot tool).
-3. Save the image as `docs/demo.png` in this project.
-4. Uncomment or add a line in this README: `![PawPal+ UI](docs/demo.png)`
+To refresh this image later, replace **`docs/demo.jpeg`** with a new screenshot (same path and filename, or update the link above if you use e.g. `demo.png`).
 
 ## Features
 
@@ -84,6 +81,7 @@ Automated tests in `tests/test_pawpal.py` cover:
 | `app.py` | Streamlit UI, session state, scheduler-driven views |
 | `main.py` | Terminal demo |
 | `tests/test_pawpal.py` | Pytest suite |
+| `docs/demo.jpeg` | README screenshot of the running app |
 | `reflection.md` | Design notes, tradeoffs, AI collaboration |
 
 ## Scenario (course brief)
