@@ -1,94 +1,65 @@
 # PawPal+ Project Reflection
 
-## 1. System Design
+## 1. System design
 
-**a. Initial design**
+### Why these classes?
 
-I created four main classes: **Pet**, **Task**, **Owner**, and **Scheduler**.
+| Class | Responsibility |
+|-------|------------------|
+| **Task** | One concrete to-do: description, clock time, frequency, **due date**, completion flag. Tasks with calendar meaning need `due_date`, not only `"09:00"`. |
+| **Pet** | Holds a list of tasks for that animal (`add_task`, `get_tasks`). **`mark_task_complete`** owns recurring behavior so the next `daily`/`weekly` instance is created on the same pet. |
+| **Owner** | Aggregates many pets; **`get_all_tasks`** is the bridge the scheduler uses to see everything. |
+| **Scheduler** | Stateless over **`Owner`**: **`sort_by_time`**, **`filter_tasks`**, **`get_todays_tasks`**, **`detect_time_conflicts`**. It does not store tasks; it organizes lists read from the owner. |
 
-- **Pet** stores information about each animal (name, species, age).
-- **Task** represents pet care activities like feeding, walking, or grooming. Each task is linked to a specific pet and includes a duration.
-- **Owner** manages relationships with multiple pets they own.
-- **Scheduler** applies sorting, filtering, and conflict checks to the owner’s tasks for a daily plan.
+This split keeps **data** (who owns what) separate from **planning operations** (sort/filter/warn).
 
-The design follows these key relationships:
-- Owner has a 1-to-many relationship with Pet (one owner can have many pets)
-- Task has a many-to-one relationship with Pet (many tasks can apply to one pet)
-- Scheduler reads from Owner (and thus Pet → Task) rather than owning tasks directly
+### How the design evolved
 
-**b. Design changes**
-
-After reviewing the design against the requirements, I identified several important gaps:
-
-**Missing Attributes:**
-- **Task** should include a **priority** field (mentioned in requirements: "Consider constraints (time available, priority, owner preferences)")
-- **Task** should have a **status** field to track completion (pending, completed, skipped)
-
-**Missing Relationships:**
-- **Schedule** should reference an **Owner** to know whose daily plan it represents
-- **Owner** should have a relationship to **Schedule** to manage their daily pet care plans
-
-**Rationale for Changes:**
-- Adding priority to Task is essential for the scheduling algorithm to make intelligent decisions about which tasks to include when time is limited.
-- Adding status to Task enables tracking of what has been completed throughout the day.
-- Adding Owner reference to Schedule creates a complete system where we can query "what is Owner X's schedule?" and ensures the schedule knows who it belongs to.
-
-These changes align better with the scenario requirement: *"Consider constraints (time available, priority, owner preferences)"* and enable the app to generate optimized daily plans.
+Early sketches used a separate “schedule” object holding tasks. The shipped design stores tasks **on each `Pet`**, and **`Scheduler`** reads via **`Owner.get_all_tasks()`**. That matched the product story (“each pet has its care list”) and avoided duplicating task storage.
 
 ---
 
-## 2. Scheduling Logic and Tradeoffs
+## 2. Scheduling logic and tradeoffs
 
-**a. Constraints and priorities**
+The scheduler uses **`due_date`** plus **`HH:MM`**, not duration blocks. **Conflict detection** only flags when two **incomplete** tasks on the same calendar day share the **exact same time string**. That is easy to explain in code and tests.
 
-The scheduler works with **due dates** (`Task.due_date`) plus clock time (`"HH:MM"`), **frequency** (`once` / `daily` / `weekly`), and **completion** state. For a given day it lists incomplete tasks due that day, sorts by time, can filter by pet or completed flag, and runs a lightweight **conflict check**: it only flags when two or more tasks share the **exact same** time string (e.g. two different pets both at `09:00`). It does **not** model duration blocks or overlapping intervals.
-
-**b. Tradeoffs**
-
-My scheduler only checks for **exact time conflicts** (same `HH:MM`), not overlapping time ranges (e.g. 09:00–10:00 vs 09:30–10:30). That keeps the logic small, easy to read, and enough for a first “are two things scheduled at the same clock slot?” warning. The downside is it would not catch subtler overlaps if tasks had start/end durations. For PawPal+ as a planning sketch, that tradeoff is reasonable; a production calendar would need intervals and busy/free logic.
+**Tradeoff:** this does **not** detect overlapping **intervals** (e.g. 09:00–10:00 vs 09:30–10:30). A richer model would need start/end times or durations and a different overlap algorithm. For a course-scale app, exact-time matching is a reasonable scope limit; a production system would need interval logic and more UX around “busy” blocks.
 
 ---
 
-## 3. AI Collaboration
+## 3. AI collaboration
 
-**a. How you used AI**
+### What helped
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+- **Agent-style assistance** was useful for scaffolding **`dataclass`** fields and **`Streamlit`** forms wired to **`session_state`**, after the architecture was already decided.
+- **Short, file-scoped questions** (e.g. “how should `filter_tasks` combine `completed` and `pet_name`?”) produced better answers than one giant prompt mixing UI, tests, and UML.
 
-**b. Judgment and verification**
+### One suggestion I did not take blindly
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+An AI once suggested compressing **conflict detection** into a dense one-liner or nested comprehensions. Fewer lines, but harder to step through in the debugger and worse for classmates reading the repo. I kept a **`defaultdict`** loop that maps **time → tasks**, then emits warnings—more lines, clearer intent.
 
-For **conflict detection**, you can paste `detect_time_conflicts` into an AI and ask how to simplify for readability or performance. Compare its answer with the current approach: a short loop plus `defaultdict` is easy to follow; a one-liner might be fewer lines but harder to debug. Choose based on what *you* find clearer, not only what is shorter.
+### Sessions and focus
+
+Splitting work into **design / implementation / tests / docs** (even as separate chat topics) reduced context mixing: the model stayed on “tests for recurrence” instead of also rewriting the UI in the same reply.
+
+### Takeaway
+
+**AI proposes; the developer decides.** Tools are strong at boilerplate and variations, but **you** still own architecture boundaries, what “done” means, how much complexity is worth it, and verification (tests + running the app). The lead architect is still human.
 
 ---
 
-## 4. Testing and Verification
+## 4. Testing and verification
 
-**a. What you tested**
+Behaviors covered by **`pytest`** include sort order, daily recurrence creating a new `Task`, conflict messages when two incomplete tasks share a time, filter correctness, and empty lists when a pet has no tasks. That gives confidence the **scheduler contract** matches what the UI relies on.
 
-- What behaviors did you test?
-- Why were these tests important?
-
-**b. Confidence**
-
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+**Next edge cases** if there were more time: time-zone–safe dates, leap weeks for `weekly`, and UI tests for Streamlit (heavier tooling).
 
 ---
 
 ## 5. Reflection
 
-**a. What went well**
+**What went well:** Clear separation between **`pawpal_system`** and **`app.py`**, plus automated tests for the scheduler, made refactors safer.
 
-- What part of this project are you most satisfied with?
+**What to improve next:** Optional **priority** on tasks and smarter “what fits in my afternoon” planning—would need extra fields and policy, not only sorting.
 
-**b. What you would improve**
-
-- If you had another iteration, what would you improve or redesign?
-
-**c. Key takeaway**
-
-- What is one important thing you learned about designing systems or working with AI on this project?
+**Key takeaway:** Shipping a small but **tested** domain layer, then exposing it in the UI, is a practical pattern; AI accelerates typing, but **consistency and tradeoffs** stay with the author.

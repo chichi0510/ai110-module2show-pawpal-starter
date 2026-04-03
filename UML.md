@@ -1,46 +1,62 @@
-# PawPal+ Development Step Records
+# PawPal+ UML (final — matches `pawpal_system.py`)
 
-## Step 1: Class Diagram Design
+Phase 1 used a simpler sketch (tasks owned by a separate `Schedule` class). The shipped design uses **`Scheduler`** with an **`Owner`**, tasks live on **`Pet`**, and **`Task`** carries calendar fields.
 
-### UML Class Diagram
+## Class diagram (Mermaid)
 
 ```mermaid
 classDiagram
+    class Owner {
+        +str name
+        +list pets
+        +add_pet(pet)
+        +get_all_tasks() List~Task~
+    }
+
     class Pet {
-        -string name
-        -string species
-        -int age
+        +str name
+        +str species
+        +int age
+        +list tasks
+        +add_task(task)
+        +get_tasks() List~Task~
+        +mark_task_complete(task)
     }
 
     class Task {
-        -string title
-        -int time
-        -Pet pet
+        +str description
+        +str time
+        +str frequency
+        +date due_date
+        +bool is_completed
+        +mark_complete()
     }
 
-    class Owner {
-        -string name
-        -Pet[] pets
+    class Scheduler {
+        +Owner owner
+        +get_todays_tasks(today) List~Task~
+        +sort_by_time(tasks) List~Task~
+        +sort_tasks(tasks) List~Task~
+        +filter_tasks(tasks, completed, pet_name) List~Task~
+        +detect_time_conflicts(tasks) List~str~
     }
 
-    class Schedule {
-        -Task[] tasks
-    }
-
-    Owner "1" -- "*" Pet : owns
-    Task "many" --> "1" Pet : applies to
-    Schedule "1" -- "*" Task : contains
+    Owner "1" o-- "*" Pet : owns
+    Pet "1" o-- "*" Task : tasks
+    Scheduler ..> Owner : uses
+    Scheduler ..> Task : sorts/filters/checks
 ```
 
-### Class Relationships
+## Relationships (summary)
 
-- **Owner** owns multiple **Pets** (1-to-many relationship)
-- **Task** applies to a specific **Pet** (many-to-one relationship)
-- **Schedule** contains multiple **Tasks** (1-to-many relationship)
+| Relationship | Meaning |
+|--------------|---------|
+| **Owner → Pet** | One owner has many pets. |
+| **Pet → Task** | Each task instance belongs to one pet’s list (`Pet.tasks`). |
+| **Scheduler → Owner** | Scheduler reads tasks via `Owner.get_all_tasks()` (aggregates all pets). |
+| **Scheduler → Task** | No ownership; scheduler orders/filters/conflict-checks task lists. |
 
-### Attributes
+## Exported image
 
-- **Pet**: name (string), species (string), age (int)
-- **Task**: title (string), time (int), pet (Pet reference)
-- **Owner**: name (string), pets (Pet array)
-- **Schedule**: tasks (Task array)
+PNG copies: **`uml_final.png`** (repo root) and **`assets/uml_final.png`**. Regenerate from **`docs/uml_final.mmd`** with [Mermaid CLI](https://github.com/mermaid-js/mermaid-cli):  
+`npx @mermaid-js/mermaid-cli -i docs/uml_final.mmd -o uml_final.png`
