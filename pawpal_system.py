@@ -32,6 +32,7 @@ class Pet:
 
     name: str
     species: str
+    age: int
     tasks: List[Task] = field(default_factory=list)
 
     def add_task(self, task: Task) -> None:

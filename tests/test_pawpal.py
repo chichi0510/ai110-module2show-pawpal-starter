@@ -8,7 +8,7 @@ def test_task_completion():
 
 
 def test_add_task_to_pet():
-    pet = Pet("Milo", "Dog")
+    pet = Pet("Milo", "Dog", 4)
     task = Task("Walk", "09:00", "daily")
 
     pet.add_task(task)

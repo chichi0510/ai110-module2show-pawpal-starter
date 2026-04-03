@@ -11,8 +11,8 @@ def _pet_name_for_task(owner: Owner, task: Task) -> str:
 def main() -> None:
     owner = Owner("Chichi")
 
-    pet1 = Pet("Milo", "Dog")
-    pet2 = Pet("Luna", "Cat")
+    pet1 = Pet("Milo", "Dog", 3)
+    pet2 = Pet("Luna", "Cat", 2)
     owner.add_pet(pet1)
     owner.add_pet(pet2)
 
