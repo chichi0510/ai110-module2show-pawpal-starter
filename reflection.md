@@ -4,13 +4,36 @@
 
 **a. Initial design**
 
-- Briefly describe your initial UML design.
-- What classes did you include, and what responsibilities did you assign to each?
+I created four main classes: **Pet**, **Task**, **Owner**, and **Schedule**.
+
+- **Pet** stores information about each animal (name, species, age).
+- **Task** represents pet care activities like feeding, walking, or grooming. Each task is linked to a specific pet and includes a duration.
+- **Owner** manages relationships with multiple pets they own.
+- **Schedule** keeps track of tasks that need to be completed, organizing them into a daily plan.
+
+The design follows these key relationships:
+- Owner has a 1-to-many relationship with Pet (one owner can have many pets)
+- Task has a many-to-one relationship with Pet (many tasks can apply to one pet)
+- Schedule has a 1-to-many relationship with Task (one schedule contains many tasks)
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+After reviewing the design against the requirements, I identified several important gaps:
+
+**Missing Attributes:**
+- **Task** should include a **priority** field (mentioned in requirements: "Consider constraints (time available, priority, owner preferences)")
+- **Task** should have a **status** field to track completion (pending, completed, skipped)
+
+**Missing Relationships:**
+- **Schedule** should reference an **Owner** to know whose daily plan it represents
+- **Owner** should have a relationship to **Schedule** to manage their daily pet care plans
+
+**Rationale for Changes:**
+- Adding priority to Task is essential for the scheduling algorithm to make intelligent decisions about which tasks to include when time is limited.
+- Adding status to Task enables tracking of what has been completed throughout the day.
+- Adding Owner reference to Schedule creates a complete system where we can query "what is Owner X's schedule?" and ensures the schedule knows who it belongs to.
+
+These changes align better with the scenario requirement: *"Consider constraints (time available, priority, owner preferences)"* and enable the app to generate optimized daily plans.
 
 ---
 
