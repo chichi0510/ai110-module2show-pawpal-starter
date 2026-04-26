@@ -1,2 +1,7 @@
 streamlit>=1.30
 pytest>=7.0
+
+openai>=1.40
+chromadb>=0.5
+python-dotenv>=1.0
+pydantic>=2.5

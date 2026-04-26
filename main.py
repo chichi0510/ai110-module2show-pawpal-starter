@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from pawpal_system import Owner, Pet, Scheduler, Task
+from pawpal.domain import Owner, Pet, Scheduler, Task
 
 
 def _pet_name_for_task(owner: Owner, task: Task) -> str:

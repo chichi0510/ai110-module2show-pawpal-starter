@@ -2,7 +2,7 @@
 
 from datetime import date, timedelta
 
-from pawpal_system import Owner, Pet, Scheduler, Task
+from pawpal.domain import Owner, Pet, Scheduler, Task
 
 
 def test_task_completion():

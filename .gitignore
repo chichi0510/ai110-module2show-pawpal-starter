@@ -3,3 +3,11 @@ __pycache__/
 .venv_new/
 .pytest_cache/
 .DS_Store
+
+.env
+logs/
+chroma_db/
+eval/reports/
+
+docs/
+

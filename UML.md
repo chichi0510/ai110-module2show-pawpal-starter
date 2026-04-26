@@ -1,4 +1,4 @@
-# PawPal+ UML (final — matches `pawpal_system.py`)
+# PawPal+ UML (final — matches `pawpal/domain.py`, formerly `pawpal_system.py`)
 
 Phase 1 used a simpler sketch (tasks owned by a separate `Schedule` class). The shipped design uses **`Scheduler`** with an **`Owner`**, tasks live on **`Pet`**, and **`Task`** carries calendar fields.
 
