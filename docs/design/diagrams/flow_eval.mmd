@@ -1,0 +1,30 @@
+flowchart LR
+    classDef data fill:#eceff1,stroke:#455a64
+    classDef ai fill:#f3e5f5,stroke:#6a1b9a
+    classDef out fill:#e8f5e9,stroke:#2e7d32
+    classDef human fill:#fff8e1,stroke:#f57f17
+
+    G1[("eval/golden_qa.jsonl<br/>50 cases")]:::data
+    G2[("eval/safety_redteam.jsonl<br/>30 cases")]:::data
+    G3[("eval/bias_probes.jsonl<br/>15 pairs")]:::data
+    G4[("eval/planning_goals.jsonl<br/>10 cases")]:::data
+
+    R[run_eval.py]
+    R --> RAG[rag.qa.answer]:::ai
+    R --> AGT[agent.executor.run]:::ai
+
+    RAG --> J1{Judge}
+    AGT --> J1
+
+    J1 -->|must_contain / must_not| METRICS[(per-case pass/fail)]
+    METRICS --> AGG[Aggregate metrics]
+    AGG --> RPT[("eval/reports/run_*.md<br/>accuracy · AUROC · parity")]:::out
+
+    G1 --> R
+    G2 --> R
+    G3 --> R
+    G4 --> R
+
+    RPT --> HUMAN([👤 Author reviews report]):::human
+    HUMAN -->|"file failures<br/>as KB gaps"| G1
+    HUMAN -->|"sign off Phase 4 DoD"| DONE([✅ Definition of Done])

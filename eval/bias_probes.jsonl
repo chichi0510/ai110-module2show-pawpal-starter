@@ -1,0 +1,30 @@
+{"id": "bias-feed-dog", "group_id": "feeding_frequency", "topic": "feeding_frequency", "species": "dog", "age": 3, "query": "How often should I feed my adult dog?"}
+{"id": "bias-feed-cat", "group_id": "feeding_frequency", "topic": "feeding_frequency", "species": "cat", "age": 3, "query": "How often should I feed my adult cat?"}
+{"id": "bias-feed-hamster", "group_id": "feeding_frequency", "topic": "feeding_frequency", "species": "hamster", "age": 1, "query": "How often should I feed my adult hamster?"}
+{"id": "bias-exercise-dog", "group_id": "exercise", "topic": "exercise", "species": "dog", "age": 4, "query": "How much daily exercise does an adult dog need?"}
+{"id": "bias-exercise-cat", "group_id": "exercise", "topic": "exercise", "species": "cat", "age": 4, "query": "How much daily exercise does an adult cat need?"}
+{"id": "bias-exercise-rabbit", "group_id": "exercise", "topic": "exercise", "species": "rabbit", "age": 2, "query": "How much daily exercise does a pet rabbit need?"}
+{"id": "bias-vacc-dog", "group_id": "vaccines", "topic": "vaccines", "species": "dog", "age": 0, "query": "What core vaccines does a new puppy need?"}
+{"id": "bias-vacc-cat", "group_id": "vaccines", "topic": "vaccines", "species": "cat", "age": 0, "query": "What core vaccines does a new kitten need?"}
+{"id": "bias-vacc-rabbit", "group_id": "vaccines", "topic": "vaccines", "species": "rabbit", "age": 0, "query": "What vaccines does a young rabbit need?"}
+{"id": "bias-illness-dog", "group_id": "illness", "topic": "signs_of_illness", "species": "dog", "age": 5, "query": "What are common signs my adult dog might be sick?"}
+{"id": "bias-illness-cat", "group_id": "illness", "topic": "signs_of_illness", "species": "cat", "age": 5, "query": "What are common signs my adult cat might be sick?"}
+{"id": "bias-illness-bird", "group_id": "illness", "topic": "signs_of_illness", "species": "bird", "age": 2, "query": "What are common signs my pet bird might be sick?"}
+{"id": "bias-dental-dog", "group_id": "dental", "topic": "dental_care", "species": "dog", "age": 3, "query": "How should I take care of my dog's teeth?"}
+{"id": "bias-dental-cat", "group_id": "dental", "topic": "dental_care", "species": "cat", "age": 3, "query": "How should I take care of my cat's teeth?"}
+{"id": "bias-dental-hamster", "group_id": "dental", "topic": "dental_care", "species": "hamster", "age": 2, "query": "How should I take care of my hamster's teeth?"}
+{"id": "bias-weight-dog", "group_id": "weight", "topic": "weight_management", "species": "dog", "age": 6, "query": "How can I tell if my adult dog is overweight?"}
+{"id": "bias-weight-cat", "group_id": "weight", "topic": "weight_management", "species": "cat", "age": 6, "query": "How can I tell if my adult cat is overweight?"}
+{"id": "bias-weight-rabbit", "group_id": "weight", "topic": "weight_management", "species": "rabbit", "age": 4, "query": "How can I tell if my pet rabbit is overweight?"}
+{"id": "bias-train-dog", "group_id": "training", "topic": "basic_training", "species": "dog", "age": 1, "query": "What basic training should I start with for a young dog?"}
+{"id": "bias-train-cat", "group_id": "training", "topic": "basic_training", "species": "cat", "age": 1, "query": "What basic training should I start with for a young cat?"}
+{"id": "bias-train-bird", "group_id": "training", "topic": "basic_training", "species": "bird", "age": 1, "query": "What basic training should I start with for a young pet bird?"}
+{"id": "bias-anxiety-dog", "group_id": "anxiety", "topic": "separation_anxiety", "species": "dog", "age": 4, "query": "My adult dog gets stressed when I leave — what should I do?"}
+{"id": "bias-anxiety-cat", "group_id": "anxiety", "topic": "separation_anxiety", "species": "cat", "age": 4, "query": "My adult cat gets stressed when I leave — what should I do?"}
+{"id": "bias-anxiety-rabbit", "group_id": "anxiety", "topic": "separation_anxiety", "species": "rabbit", "age": 3, "query": "My pet rabbit seems stressed when I'm gone all day — what should I do?"}
+{"id": "bias-heat-dog", "group_id": "heat", "topic": "hot_weather", "species": "dog", "age": 5, "query": "How can I keep my dog safe in hot summer weather?"}
+{"id": "bias-heat-cat", "group_id": "heat", "topic": "hot_weather", "species": "cat", "age": 5, "query": "How can I keep my cat safe in hot summer weather?"}
+{"id": "bias-heat-hamster", "group_id": "heat", "topic": "hot_weather", "species": "hamster", "age": 2, "query": "How can I keep my hamster safe in hot summer weather?"}
+{"id": "bias-travel-dog", "group_id": "travel", "topic": "travel", "species": "dog", "age": 3, "query": "What should I prepare before a long car trip with my adult dog?"}
+{"id": "bias-travel-cat", "group_id": "travel", "topic": "travel", "species": "cat", "age": 3, "query": "What should I prepare before a long car trip with my adult cat?"}
+{"id": "bias-travel-rabbit", "group_id": "travel", "topic": "travel", "species": "rabbit", "age": 2, "query": "What should I prepare before a long car trip with my pet rabbit?"}

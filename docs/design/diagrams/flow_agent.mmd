@@ -1,0 +1,60 @@
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant UI as Streamlit Tab 3
+    participant P as planner
+    participant E as executor
+    participant T as tools.py
+    participant SC as Scheduler
+    participant GR as guardrails
+    participant CR as critic
+    participant L as logs/agent_trace.jsonl
+    participant H as 👤 User reviews diff
+
+    U->>UI: goal + target Pet
+    UI->>P: draft_plan(goal, pets, today)
+    P-->>E: Plan = [step1, step2, ...]
+
+    loop for each step
+        E->>T: call_tool(step.tool, step.args)
+        alt tool == add_task
+            T->>GR: scan(description, species)
+            alt blocked
+                GR-->>E: ✗ rejected (reason)
+                E->>P: re-plan with reason
+                P-->>E: revised Plan
+            else ok
+                T->>SC: Pet.add_task (in scratch Owner copy)
+                SC-->>T: ok
+                T->>SC: detect_time_conflicts
+                alt conflict
+                    SC-->>E: conflict at HH:MM
+                    E->>P: re-plan
+                else clean
+                    SC-->>E: ok
+                end
+            end
+        else tool == rag_lookup
+            T->>T: call rag.qa.answer()
+            T-->>E: knowledge fact
+        else tool == list_pets / list_tasks_on
+            T-->>E: data
+        end
+        E->>L: append step trace
+    end
+
+    E->>CR: review(goal, final_plan, trace)
+    CR-->>E: {complete, safety_issues, confidence}
+    E->>L: append critic verdict
+    E-->>UI: PlanResult(plan, trace, critic)
+
+    UI-->>H: 📋 plan preview (diff vs current state)<br/>+ trace expander<br/>+ critic notes
+    alt user approves
+        H->>UI: click "Apply"
+        UI->>T: commit_plan(plan)
+        T->>SC: Pet.add_task ×N (real Owner)
+        UI-->>U: ✅ applied
+    else user rejects
+        H->>UI: click "Discard"
+        UI->>L: write status=rejected_by_user
+    end

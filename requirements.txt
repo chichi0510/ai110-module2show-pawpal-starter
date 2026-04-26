@@ -1,3 +1,7 @@
+# Runtime dependencies for `streamlit run app.py` and `pytest`.
+# Use loose `>=` ranges so the project stays compatible with newer patch
+# releases. For an exact reproducible environment use `requirements-lock.txt`.
+
 streamlit>=1.30
 pytest>=7.0
 

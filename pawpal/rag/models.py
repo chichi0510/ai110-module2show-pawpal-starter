@@ -6,7 +6,7 @@ and the Streamlit UI does not drift over time.
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -44,4 +44,6 @@ class AnswerResult(BaseModel):
     retrieved_chunks: List[Chunk] = Field(default_factory=list)
     duration_ms: int = 0
     model: Optional[str] = None
-    confidence: Optional[float] = None  # filled by Phase 3
+    confidence: Optional[float] = None  # Phase 3: aggregated 0..1 from critic
+    critic: Optional[Dict[str, Any]] = None  # Phase 3: CriticReport.model_dump()
+    bias_warnings: List[Dict[str, Any]] = Field(default_factory=list)  # Phase 3

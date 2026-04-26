@@ -1,0 +1,16 @@
+# Optional dependencies for the offline evaluation harness and the
+# `docs/EVAL_RESULTS.md` charts.
+#
+# `eval/run_eval.py` itself is pure stdlib (AUROC is a hand-written
+# Mann-Whitney U), so these libraries are only needed when you want to
+# render bias-parity bar charts or the calibration ROC curve as PNGs.
+#
+# Install with:
+#   pip install -r requirements.txt -r requirements-eval.txt
+#
+# `requirements-eval.txt` is intentionally separate from `requirements.txt`
+# so the runtime container stays small.
+
+-r requirements.txt
+
+matplotlib>=3.8

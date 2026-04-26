@@ -1,0 +1,88 @@
+flowchart TB
+    classDef ui fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef ai fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef rule fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef domain fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef data fill:#eceff1,stroke:#455a64,color:#263238
+    classDef test fill:#ffebee,stroke:#c62828,color:#b71c1c
+
+    User([👤 User])
+
+    subgraph UI ["UI Layer  (app.py — Streamlit)"]
+        T1["Schedule Tab<br/>existing PawPal+"]
+        T2["Ask PawPal Tab<br/>RAG Q&A"]
+        T3["Plan My Week Tab<br/>Agentic"]
+        Trace["Reasoning Trace<br/>(expander)"]
+    end
+
+    subgraph AI ["AI Layer  (LLM-powered)"]
+        RAG["rag/qa.py<br/>(Retriever + Generator)"]
+        AGENT["agent/<br/>Planner → Executor"]
+        CRITIC["critic/<br/>Self-Critique + Confidence"]
+    end
+
+    subgraph RULE ["Rule Layer  (deterministic Python)"]
+        GR["guardrails/<br/>toxic_food · meds · bias · input_filter"]
+        TOOLS["tools.py<br/>LLM-callable wrappers"]
+    end
+
+    subgraph DOMAIN ["Domain Layer  (existing, untouched)"]
+        SCHED["Scheduler"]
+        OWNER["Owner / Pet / Task"]
+    end
+
+    subgraph DATA ["Data & Knowledge"]
+        KB[("knowledge/<br/>30+ markdown")]
+        VEC[("ChromaDB<br/>vector index")]
+        LOGS[("logs/<br/>rag_trace · agent_trace")]
+    end
+
+    subgraph EVAL ["Evaluation & Testing"]
+        UT["pytest unit tests"]
+        BEH["eval/run_eval.py<br/>behavioral harness"]
+        REPORTS[("eval/reports/<br/>markdown reports")]
+        HUMAN([👤 Human reviewer<br/>before Apply])
+    end
+
+    User -->|"asks question"| T2
+    User -->|"states a goal"| T3
+    User -->|"adds task manually"| T1
+
+    T2 --> RAG
+    T3 --> AGENT
+    T1 --> SCHED
+
+    RAG --> GR
+    AGENT --> CRITIC
+    AGENT --> TOOLS
+    TOOLS --> GR
+    CRITIC --> GR
+
+    TOOLS --> SCHED
+    SCHED --> OWNER
+    RAG --> VEC
+    KB -. "indexed by rag/index.py" .-> VEC
+
+    RAG --> LOGS
+    AGENT --> LOGS
+    GR --> LOGS
+
+    RAG -. "answer + citations" .-> T2
+    AGENT -. "plan preview" .-> T3
+    CRITIC -. "confidence badge" .-> Trace
+    LOGS -. "read-only view" .-> Trace
+
+    T3 --> HUMAN
+    HUMAN -->|"Approve / Reject"| TOOLS
+
+    UT -. "covers" .-> RULE
+    UT -. "covers" .-> DOMAIN
+    BEH -. "covers" .-> AI
+    BEH --> REPORTS
+
+    class T1,T2,T3,Trace ui
+    class RAG,AGENT,CRITIC ai
+    class GR,TOOLS rule
+    class SCHED,OWNER domain
+    class KB,VEC,LOGS data
+    class UT,BEH,REPORTS test

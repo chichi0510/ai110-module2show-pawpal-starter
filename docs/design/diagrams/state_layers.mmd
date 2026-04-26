@@ -1,0 +1,26 @@
+flowchart TB
+    classDef vol fill:#fff8e1,stroke:#f57f17
+    classDef sess fill:#e8f5e9,stroke:#2e7d32
+    classDef pers fill:#e3f2fd,stroke:#1565c0
+    classDef gone fill:#ffebee,stroke:#c62828
+
+    subgraph PROCESS ["Process-lifetime (lost on restart)"]
+        SS["st.session_state.owner<br/>当前 Pets / Tasks"]:::sess
+        CACHE["@st.cache_resource<br/>Chroma client / LLM client"]:::sess
+    end
+
+    subgraph PERSIST ["Persistent (on disk)"]
+        KB[("knowledge/*.md")]:::pers
+        VEC[("chroma_db/")]:::pers
+        LOG_R[("logs/rag_trace.jsonl")]:::pers
+        LOG_A[("logs/agent_trace.jsonl")]:::pers
+        REPORTS[("eval/reports/")]:::pers
+    end
+
+    subgraph EPHEMERAL ["Ephemeral (intra-request only)"]
+        SCRATCH["agent scratch Owner<br/>用于预演 plan"]:::vol
+        PROMPT["assembled prompt"]:::vol
+    end
+
+    SS -.- CACHE
+    CACHE --> VEC

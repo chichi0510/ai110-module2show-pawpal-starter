@@ -21,7 +21,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
-from pawpal.guardrails import input_filter, toxic_food
+from pawpal.critic import self_critique
+from pawpal.guardrails import bias_filter, input_filter, toxic_food
 from pawpal.llm_client import LLMClient
 from pawpal.rag.models import AnswerResult, Chunk, Citation
 from pawpal.rag.retrieve import DEFAULT_K, retrieve
@@ -123,6 +124,7 @@ def answer(
         "postflight": {"safety_intervened": False, "hits": []},
         "answer_chars": 0,
         "duration_ms": 0,
+        "critic": None,  # Phase 3 will fill this with CriticReport.model_dump()
     }
 
     # 1. Preflight (off-topic / PII / diagnosis).
@@ -216,6 +218,40 @@ def answer(
         retrieved_chunks=chunks,
         model=chat.model,
     )
+
+    # 7. Self-critique (Phase 3). Always called when an LLM answer was produced
+    #    so the trace carries a critic record even for safety-intervened
+    #    answers; the UI uses §3.5 priority rules to avoid double-banner.
+    contexts_for_critic = [
+        {
+            "source_path": c.source_path,
+            "heading": c.heading,
+            "text": c.text,
+        }
+        for c in chunks
+    ]
+    critic_report = self_critique.review_answer(
+        query=query,
+        answer=result.text,
+        contexts=contexts_for_critic,
+        species=pet.species,
+        age=pet.age,
+        client=llm,
+    )
+    result.critic = critic_report.model_dump()
+    result.confidence = critic_report.confidence
+    trace["critic"] = result.critic
+
+    # 8. Bias scan (Phase 3 §3.7). Pure heuristics over the final text /
+    #    retrieval — never rewrites the answer, only feeds the UI banner.
+    bias_warnings = bias_filter.scan_answer(
+        result.text,
+        species=pet.species,
+        retrieved_chunks=chunks,
+    )
+    result.bias_warnings = bias_filter.warnings_to_dicts(bias_warnings)
+    trace["bias_warnings"] = result.bias_warnings
+
     return _finalise(result, trace, started)
 
 

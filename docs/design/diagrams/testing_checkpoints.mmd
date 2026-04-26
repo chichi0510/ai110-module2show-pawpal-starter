@@ -1,0 +1,32 @@
+flowchart LR
+    classDef pre fill:#e1f5fe,stroke:#0277bd
+    classDef rt fill:#fff3e0,stroke:#e65100
+    classDef post fill:#f3e5f5,stroke:#6a1b9a
+    classDef human fill:#fff8e1,stroke:#f57f17
+
+    subgraph PRE ["Design-time / Pre-deployment"]
+        P1["① 单元测试<br/>tests/test_*.py<br/>(deterministic)"]:::pre
+        P2["② 行为评估<br/>eval/run_eval.py<br/>(LLM-in-loop)"]:::pre
+    end
+
+    subgraph RT ["Runtime (per request)"]
+        R1["③ Guardrails<br/>input + output filter<br/>(deterministic)"]:::rt
+        R2["④ Self-critique<br/>+ confidence badge<br/>(LLM)"]:::rt
+        R3["⑤ Human Approval<br/>before agent commits<br/>(👤)"]:::human
+    end
+
+    subgraph POST ["Post-hoc"]
+        H1["📂 Trace logs<br/>logs/*.jsonl"]:::post
+        H2["📊 Eval reports<br/>per-phase regression check"]:::post
+        H3["👤 Author review<br/>reflection.md"]:::human
+    end
+
+    P1 --> R3
+    P2 --> R3
+    R1 --> H1
+    R2 --> H1
+    R3 --> H1
+    H1 --> H2
+    H2 --> H3
+    H3 -->|"feed back"| P1
+    H3 -->|"feed back"| P2

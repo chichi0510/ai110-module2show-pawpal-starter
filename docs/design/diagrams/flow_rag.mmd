@@ -1,0 +1,41 @@
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant UI as Streamlit Tab 2
+    participant IF as input_filter
+    participant TF as toxic_food
+    participant R as retriever
+    participant LLM as LLMClient
+    participant CR as critic
+    participant L as logs/rag_trace.jsonl
+    participant H as 👤 User reads result
+
+    U->>UI: Q + Pet context (species, age)
+    UI->>IF: preflight(Q)
+    alt off-topic / PII / medical-diagnosis
+        IF-->>UI: blocked + reason
+        UI-->>H: safe canned reply
+        UI->>L: write trace (skipped=true)
+    else allowed
+        IF->>TF: check_input(Q, species)
+        alt toxic food asked
+            TF-->>UI: hard safety answer
+            UI->>L: write trace (input_blocked=true)
+            UI-->>H: 🛑 banner + safety answer
+        else clean
+            TF->>R: retrieve(Q, species, k=4)
+            R-->>R: top-k chunks from ChromaDB
+            R->>LLM: prompt(Q, chunks)
+            LLM-->>CR: raw answer
+            CR-->>CR: score grounded/actionable/safe
+            CR->>TF: check_output(answer, species)
+            alt postflight hit
+                TF-->>UI: inject ⚠ banner + flag safety_intervened
+            else clean
+                TF-->>UI: pass-through
+            end
+            UI->>L: write trace (full)
+            UI-->>H: answer + [source N] + confidence badge + sources expander
+        end
+    end
+    H->>H: read, decide if trustworthy

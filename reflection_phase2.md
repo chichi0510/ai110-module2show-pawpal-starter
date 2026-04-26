@@ -1,4 +1,16 @@
-# PawPal+ Project Reflection
+# PawPal+ Project Reflection (Phase 2 — pre-AI baseline)
+
+> 📜 **Historical document.** This reflection covers the original PawPal+
+> deterministic scheduler (no AI). It is kept here for diff value — it shows
+> the project's starting point before the Module 4 final-project AI rewrite.
+>
+> 👉 **For the current project reflection** (RAG, agentic planner,
+> self-critique, evaluation harness) read
+> [`docs/REFLECTION_v2.md`](docs/REFLECTION_v2.md). That document is the one
+> the rubric grades.
+
+---
+
 
 ## 1. System design
 

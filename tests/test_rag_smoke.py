@@ -8,14 +8,13 @@ covered later by `eval/run_eval.py`.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pytest
 
 from pawpal.llm_client import ChatResponse, ChatUsage, LLMClient
 from pawpal.rag.index import build_index
 from pawpal.rag.models import Chunk
-from pawpal.rag.qa import LOG_FILE, PetContext, answer
+from pawpal.rag.qa import PetContext, answer
 from pawpal.rag import qa as qa_module
 from pawpal.rag import retrieve as retrieve_module
 
