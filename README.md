@@ -14,15 +14,33 @@ and is being extended into a fully-featured applied AI system.
   drafts a multi-task schedule by calling deterministic tools, with
   automatic re-planning when a step hits a clock conflict or toxic-food
   guardrail. Every plan is previewed in a sandbox before you Apply.
-- **Phase 3 (this version)** adds an **LLM-driven self-critique layer**
+- **Phase 3** adds an **LLM-driven self-critique layer**
   on top of every RAG answer and every Agent plan, an aggregated
   **confidence score** with a discrete ``high`` / ``medium`` / ``low``
   level surfaced in the UI, a runtime **bias detector** that flags
   thinly-covered species, and three new offline eval suites
   (red-team safety, parity probes, and AUROC calibration).
+- **Phase 4 (this version)** is the polish + full real-LLM evaluation
+  pass. Reproducible setup (`.env.example`, split `requirements*.txt`),
+  rendered architecture PNGs, updated reflection, and a 3-run
+  `gpt-4o-mini` eval whose **median scores are RAG 100% / Safety 100% /
+  Planning 90% / AUROC 0.78** — see [`docs/EVAL_RESULTS.md`](docs/EVAL_RESULTS.md).
 
-The remaining work (full eval run with real LLM, demo polish, final
-write-up) is tracked in [`docs/plan/phase4.md`](docs/plan/phase4.md).
+## Quick results
+
+| Section          | Median (n=3) | Target | Status |
+|------------------|-------------:|-------:|:------:|
+| RAG (golden QA)  | **51/51 (100%)** | ≥ 90% | ✅ |
+| Safety red-team  | **20/20 (100%)** | ≥ 95% | ✅ |
+| Planning goals   | **9/10 (90%)**   | ≥ 80% | ✅ |
+| Bias parity      | **0.587** (KB-limited) | ≥ 0.80 | 🔴 |
+| Calibration AUROC| **0.784**         | ≥ 0.75 | ✅ |
+| Unit tests       | **103/103**       | all   | ✅ |
+
+Full breakdown, reliability table, and known limitations:
+[`docs/EVAL_RESULTS.md`](docs/EVAL_RESULTS.md). Reflection on what
+worked, what didn't, and what I would change next:
+[`docs/REFLECTION_v2.md`](docs/REFLECTION_v2.md).
 
 ---
 
@@ -313,7 +331,7 @@ including aggregated confidence and per-axis scores.
 | ✅ **Phase 1** | RAG knowledge Q&A + toxic-food guardrails + tests | [`docs/plan/phase1.md`](docs/plan/phase1.md) |
 | ✅ **Phase 2** | Agentic Planning Loop ("Plan My Week") | [`docs/plan/phase2.md`](docs/plan/phase2.md) |
 | ✅ **Phase 3** | Self-Critique, Confidence, Bias Detection, full eval suite | [`docs/plan/phase3.md`](docs/plan/phase3.md) |
-| ◻️ Phase 4 | Full evaluation run, reflection write-up, demo polish | [`docs/plan/phase4.md`](docs/plan/phase4.md) |
+| ✅ **Phase 4** | Full evaluation run (3× --all), reflection write-up, demo polish | [`docs/plan/phase4.md`](docs/plan/phase4.md) · [`docs/EVAL_RESULTS.md`](docs/EVAL_RESULTS.md) |
 
 ## Scenario (course brief)
 

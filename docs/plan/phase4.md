@@ -1,6 +1,8 @@
 # Phase 4 Plan — Full Evaluation, Documentation & Demo
 
-> **Status**: Draft v1.1（2026-04-26 refresh patch；与 Phase 3 v1.1 对齐）
+> **Status**: ✅ **Executed (2026-04-27)** — median scores RAG 100% / Safety 100% /
+> Planning 90% / Bias 0.587 / AUROC 0.784. See [`../EVAL_RESULTS.md`](../EVAL_RESULTS.md).
+> **Source plan**: Draft v1.1（2026-04-26 refresh patch；与 Phase 3 v1.1 对齐）
 > **Phase goal**: 把 Phase 1–3 沉淀的所有能力**一次跑透**，产出可量化的可靠性
 > 报告；把项目文档（README、reflection、架构）升级到 portfolio 质量；准备
 > 一份 5 分钟的 demo（视频或 slides）。
