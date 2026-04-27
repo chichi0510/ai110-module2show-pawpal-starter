@@ -1,155 +1,155 @@
 # Open Design Questions
 
-> **Status**: Living document — 实施过程中遇到的"还没拍板"的具体问题。
-> 每条都列出**选项 / 权衡 / 推荐决策 / 重新决策的触发条件**。
-> 决策一旦在代码里 ship，把状态从 🟡 Open 改成 ✅ Decided 并填 commit / phase。
+> **Status**: Living document — concrete "not-yet-decided" issues that surface during implementation.
+> Each entry lists **options / tradeoffs / recommended decision / triggers for re-deciding**.
+> Once a decision ships in code, flip its status from 🟡 Open to ✅ Decided and record the commit / phase.
 >
-> **怎么用这份文档**:
-> - 写代码前先扫一遍 → 避免半路被卡住
-> - 实施时按"Recommended decision"先走，**不要在这一步过度思考**
-> - 真的发现推荐不对 → 改这里 + 改 architecture.md，再改代码
+> **How to use this document**:
+> - Skim it before writing code → avoid getting stuck mid-task
+> - During implementation, default to the "Recommended decision" — **don't over-think this step**
+> - If the recommendation turns out to be wrong → update this doc + `architecture.md`, then change the code
 >
-> ## Phase 3 落地小结（2026-04, 已实施）
+> ## Phase 3 implementation summary (2026-04, shipped)
 >
-> - Q3 — confidence aggregation: 采用 `0.40·grounded + 0.20·actionable + 0.40·safe`
->   （RAG）和 `0.35·complete + 0.25·specific + 0.40·safe`（Plan）；阈值
->   `HIGH=0.85 / MEDIUM=0.60`；`safe < 0.60` 触发 veto，confidence 上限
->   `0.40`（=`SAFE_VETO_FLOOR`）。详见 `pawpal/critic/confidence.py`。
-> - Q4 — critic prompt 失败处理: critic 永不抛出。无 API key / mock 模式 / `PAWPAL_DISABLE_CRITIC=1`
->   → 固定 *medium* mock report；JSON parse 失败 → 全 0 分的 *low* report
->   并把错误塞到 `parse_error`。`AnswerResult.critic` / `PlanResult.critic`
->   永远是 `Dict[str, Any]` 形状。
-> - 新增 invariant — guardrail vs critic 优先级（plan §3.5 + 测试 `tests/test_critic_priority.py`）：
->   一旦 `safety_intervened or input_blocked` 为真，UI 抑制 confidence badge，
->   只渲染红色 guardrail banner；critic 仍然写进 trace（用于 AUROC 分析）。
-> - Plan critic 新增不变量：低置信度时只在表上方加红 banner，**不**折叠
->   diff 表 — 用户必须能看到将要被 Apply 的任务才能做决策。
+> - Q3 — confidence aggregation: adopted `0.40·grounded + 0.20·actionable + 0.40·safe`
+>   (RAG) and `0.35·complete + 0.25·specific + 0.40·safe` (Plan); thresholds
+>   `HIGH=0.85 / MEDIUM=0.60`; `safe < 0.60` triggers veto, capping confidence at
+>   `0.40` (= `SAFE_VETO_FLOOR`). See `pawpal/critic/confidence.py` for details.
+> - Q4 — critic prompt failure handling: the critic never throws. No API key / mock mode / `PAWPAL_DISABLE_CRITIC=1`
+>   → fixed *medium* mock report; JSON parse failure → all-zero *low* report
+>   with the error stuffed into `parse_error`. `AnswerResult.critic` / `PlanResult.critic`
+>   are always `Dict[str, Any]` shaped.
+> - New invariant — guardrail vs critic priority (plan §3.5 + test `tests/test_critic_priority.py`):
+>   once `safety_intervened or input_blocked` is true, the UI suppresses the confidence badge
+>   and renders only the red guardrail banner; the critic is still written to the trace (for AUROC analysis).
+> - New invariant for the Plan critic: when confidence is low, only add a red banner above the table — **do not**
+>   collapse the diff table — the user must be able to see the tasks about to be Applied in order to decide.
 
 ---
 
-## 索引
+## Index
 
-| # | 问题 | 状态 | Phase |
+| # | Question | Status | Phase |
 |---|------|------|-------|
-| Q1 | Agent 路径如何 deepcopy Owner？(`scratch_owner` 隔离) | 🟡 Open | Phase 2 |
-| Q2 | 知识库 md 改了之后，谁来重建 ChromaDB？ | 🟡 Open | Phase 1 |
-| Q3 | RAG 检索零命中（top score 低）怎么办？ | 🟡 Open | Phase 1 |
-| Q4 | `gpt-4o-mini` 不够用时要不要 fallback `gpt-4o`？ | 🟡 Open | Phase 1 |
-| Q5 | Pet = "No specific pet" 时，species filter 怎么走？ | 🟡 Open | Phase 1 |
+| Q1 | How should the agent path deepcopy Owner? (`scratch_owner` isolation) | 🟡 Open | Phase 2 |
+| Q2 | After the knowledge-base markdown changes, who rebuilds ChromaDB? | 🟡 Open | Phase 1 |
+| Q3 | What if RAG retrieval scores zero hits (low top score)? | 🟡 Open | Phase 1 |
+| Q4 | When `gpt-4o-mini` is not enough, should we fall back to `gpt-4o`? | 🟡 Open | Phase 1 |
+| Q5 | When Pet = "No specific pet", how should the species filter behave? | 🟡 Open | Phase 1 |
 
-> 后续遇到新问题，**编号往后加**（Q6, Q7…），不要插队，方便引用。
+> When new questions come up, **append numbers in order** (Q6, Q7…); don't re-number, so cross-references stay stable.
 
 ---
 
-## Q1 — Agent 路径如何 deepcopy Owner？
+## Q1 — How should the agent path deepcopy Owner?
 
-### 背景
-`docs/plan/phase2.md` §0 / §3 / §5 任务 2.5 都强调"scratch Owner 模式"：plan 先在 deepcopy 上预演，user 点 Apply 才提交真实 `st.session_state.owner`。
-但**怎么 deepcopy**、**Apply 时怎么 merge** 还没敲死。
+### Background
+`docs/plan/phase2.md` §0 / §3 / §5 task 2.5 all emphasize the "scratch Owner pattern": the plan rehearses on a deepcopy first, and the user clicks Apply before anything is committed to the real `st.session_state.owner`.
+But **how to deepcopy** and **how to merge on Apply** have not been pinned down.
 
-### 选项
+### Options
 
-**A. `copy.deepcopy(owner)`，Apply 时整体替换 `st.session_state.owner = scratch`**
-- ✅ 简单粗暴，不会半提交
-- ❌ 用户在另一个 tab 同时手动加任务，会被 Apply 整体覆盖丢失（race condition）
+**A. `copy.deepcopy(owner)`, with Apply replacing the whole object via `st.session_state.owner = scratch`**
+- ✅ Simple and blunt; no half-committed state
+- ❌ If the user manually adds a task in another tab at the same time, the wholesale Apply overwrites and loses it (race condition)
 
-**B. `deepcopy` + Apply 时 diff（只把"agent 新加的 tasks"merge 回真 owner）**
-- ✅ 不会丢 user 在别 tab 的并发改动
-- ❌ 实现复杂，需要给每个 Task 一个唯一 ID（dataclass 现在没有）
+**B. `deepcopy` + diff on Apply (only merge "tasks the agent newly added" back into the real owner)**
+- ✅ No loss of concurrent edits the user made in other tabs
+- ❌ Implementation is complex; every Task needs a unique ID (the dataclass currently doesn't have one)
 
-**C. 不用 deepcopy，agent 直接调真 `Pet.add_task` 但每次先记录 added 列表，Discard 时回滚（remove 这些 task）**
-- ❌ 风险最大：guardrail 漏掉一条 toxic-food，rollback 失败就污染了 owner
+**C. Skip deepcopy; the agent calls the real `Pet.add_task` but records the added list each time, and on Discard rolls back (removing those tasks)**
+- ❌ Highest risk: if a guardrail misses one toxic-food entry and rollback fails, the real owner is now polluted
 
-### 推荐决策（Phase 2 起点）
-**方案 A (deepcopy + 整体替换)**，但加 1 条简单守卫：
+### Recommended Decision (Phase 2 starting point)
+**Option A (deepcopy + wholesale replace)**, plus one simple guardrail:
 
-> 在 user 点 Generate plan 后，UI 上**禁用** Schedule tab 的"Add task"表单（或显示"Plan in progress, wait for Apply or Discard"），把并发问题转成 UX 约束。
+> After the user clicks Generate plan, the UI **disables** the "Add task" form on the Schedule tab (or shows "Plan in progress, wait for Apply or Discard"), turning the concurrency problem into a UX constraint.
 
-**Apply 实现**：
+**Apply implementation**:
 ```python
-# scratch_owner 是 deepcopy；Apply 时整体替换
+# scratch_owner is a deepcopy; Apply replaces it wholesale
 st.session_state.owner = scratch_owner
 ```
 
-**Discard 实现**：什么都不做，scratch_owner 跟着 Streamlit re-run 自动 GC。
+**Discard implementation**: do nothing — `scratch_owner` is GC'd along with the next Streamlit re-run.
 
-### 触发重新决策
-- 真的有用户反馈"Apply 把我手动加的任务弄丢了"
-- 多用户场景出现（Phase 4 stretch 提到 SQLite 持久化时）
+### Triggers to Re-decide
+- Real user feedback: "Apply lost the task I added by hand"
+- Multi-user scenarios appear (Phase 4 stretch mentions SQLite persistence)
 
-### 落地位置
-- `agent/executor.py`：`run()` 开头 `scratch = copy.deepcopy(owner)`
-- `app.py` Tab 3：`if scratch_in_progress: disable Tab 1 form`
-- 单元测试：`test_apply_replaces_owner`, `test_discard_keeps_owner`
-
----
-
-## Q2 — 知识库 md 改了之后，谁来重建 ChromaDB？
-
-### 背景
-`pawpal/rag/index.py` 是手动跑的 `--rebuild` 脚本。但开发期会反复改 `knowledge/*.md`，**忘记重建索引** = 检索拿到旧文本 = debug 时怀疑 LLM 出问题但其实是 stale index。
-
-### 选项
-
-**A. 永远手动 `python -m pawpal.rag.index --rebuild`**（Phase 1 当前默认）
-- ✅ 零代码
-- ❌ 容易忘；演示前不重建 = 翻车
-
-**B. 启动 streamlit 时自动检测 mtime 差异，自动重建**
-- ✅ 用户零负担
-- ❌ 启动慢（首次嵌入 30+ 文档要几秒到几十秒）
-
-**C. 用一个 `.indexed_at` 文件（marker），存最后一次重建时间；启动时对比 `knowledge/**/*.md` 的 max mtime；过期就显示一个 banner 提示用户手动跑**
-- ✅ 不阻塞启动；用户有清晰提示
-- ❌ 多一个 marker 文件要管
-
-**D. 启动时检测 mtime；过期就阻塞重建一次（带进度条）**
-- ✅ 自动 + 不静默
-- ❌ 用户改一条 md 就要等 5–30s
-
-### 推荐决策
-**方案 C**：
-- `pawpal/rag/index.py` 重建后写 `chroma_db/.indexed_at`（unix timestamp）
-- `app.py` 启动时（在 `Ask PawPal` tab 顶部）检查 `max(mtime of knowledge/**/*.md) > .indexed_at`
-- 过期 → 显示一个 `st.warning("⚠ Knowledge base updated since last index. Run `python -m pawpal.rag.index --rebuild`.")`
-- **不自动重建**，让开发者控制时机
-- README 顶部写明这条规则
-
-### 触发重新决策
-- 开发期发现自己反复忘 → 升级到方案 D
-- 部署到 Streamlit Cloud → 必须方案 D（用户没终端）
-
-### 落地位置
-- `pawpal/rag/index.py`：rebuild 末尾写 marker
-- `app.py`：tab 切到 Ask PawPal 时调一次 `_check_kb_freshness()`
+### Implementation Locations
+- `agent/executor.py`: at the top of `run()`, `scratch = copy.deepcopy(owner)`
+- `app.py` Tab 3: `if scratch_in_progress: disable Tab 1 form`
+- Unit tests: `test_apply_replaces_owner`, `test_discard_keeps_owner`
 
 ---
 
-## Q3 — RAG 检索零命中怎么办？
+## Q2 — After the knowledge-base markdown changes, who rebuilds ChromaDB?
 
-### 背景
-用户问 "How do I take care of my pet rock?"（既不是离题到拒答，也不在 KB 里）。
-`input_filter` 不会拦（"pet" + "care" 看起来正常），retrieve 返回的 top-k 分数都很低（< 0.3），LLM 拿到几乎无关的 context 仍可能 hallucinate。
+### Background
+`pawpal/rag/index.py` is a manually-run `--rebuild` script. But during development you tweak `knowledge/*.md` repeatedly — **forgetting to rebuild the index** = retrieval returns stale text = while debugging you blame the LLM when the real issue is a stale index.
 
-### 选项
+### Options
 
-**A. 不管，靠 prompt 强约束 LLM "if context is irrelevant, say I don't know"**
-- ❌ 实测 LLM 经常不听话；guardrails 应该是确定性
+**A. Always rebuild manually with `python -m pawpal.rag.index --rebuild`** (the current Phase 1 default)
+- ✅ Zero code
+- ❌ Easy to forget; not rebuilding before a demo = train wreck
 
-**B. 在 `pawpal/rag/retrieve.py` 加阈值：如果 top score < 0.4，直接返回空列表**
-**C. 在 `pawpal/rag/qa.py` 检查：如果 retrieve 返空 / top_score < 阈值 → 短路返回硬拒答**
-- ✅ 确定性、可测试、可解释
-- ❌ 阈值要调（0.4 是猜的；不同 embedding 模型 score 分布不同）
+**B. On Streamlit startup, auto-detect mtime drift and rebuild automatically**
+- ✅ Zero burden on the user
+- ❌ Slow startup (first-time embedding for 30+ docs takes seconds to tens of seconds)
 
-**D. 阈值 + LLM 辅助分类（"这个 query 在不在你能回答的范围内"）**
-- ❌ 多一次 LLM 调用，方案 C 已经够用了
+**C. Use a `.indexed_at` marker file storing the timestamp of the last rebuild; on startup compare it to the max mtime of `knowledge/**/*.md`; if stale, show a banner asking the user to rebuild manually**
+- ✅ Doesn't block startup; user gets a clear hint
+- ❌ One more marker file to manage
 
-### 推荐决策
-**方案 C** + 一个**可配置阈值**：
+**D. On startup, detect mtime; if stale, block and rebuild once (with a progress bar)**
+- ✅ Automatic and never silent
+- ❌ Editing one md file means waiting 5–30s
+
+### Recommended Decision
+**Option C**:
+- `pawpal/rag/index.py` writes `chroma_db/.indexed_at` (unix timestamp) at the end of a rebuild
+- On Streamlit startup (at the top of the `Ask PawPal` tab), check whether `max(mtime of knowledge/**/*.md) > .indexed_at`
+- If stale → show `st.warning("⚠ Knowledge base updated since last index. Run `python -m pawpal.rag.index --rebuild`.")`
+- **Do not auto-rebuild** — the developer controls the timing
+- Document the rule prominently at the top of the README
+
+### Triggers to Re-decide
+- During development you keep forgetting → upgrade to Option D
+- Deploying to Streamlit Cloud → must use Option D (users have no terminal)
+
+### Implementation Locations
+- `pawpal/rag/index.py`: write the marker at the end of rebuild
+- `app.py`: when switching to Ask PawPal, call `_check_kb_freshness()` once
+
+---
+
+## Q3 — What to do when RAG retrieval scores zero hits?
+
+### Background
+The user asks "How do I take care of my pet rock?" (neither off-topic enough to refuse, nor in the KB).
+`input_filter` won't block it ("pet" + "care" looks fine), and retrieve returns a top-k whose scores are all low (< 0.3); the LLM still gets near-irrelevant context and may hallucinate.
+
+### Options
+
+**A. Do nothing; rely on a strong prompt telling the LLM "if the context is irrelevant, say I don't know"**
+- ❌ In practice the LLM frequently disobeys; guardrails should be deterministic
+
+**B. Add a threshold in `pawpal/rag/retrieve.py`: if the top score < 0.4, return an empty list**
+**C. Check inside `pawpal/rag/qa.py`: if retrieve returns empty / top_score < threshold → short-circuit to a hard refusal**
+- ✅ Deterministic, testable, explainable
+- ❌ The threshold has to be tuned (0.4 is a guess; different embedding models give different score distributions)
+
+**D. Threshold + an LLM-assisted classifier ("is this query in your answerable scope")**
+- ❌ Adds another LLM call; Option C is already enough
+
+### Recommended Decision
+**Option C** + a **configurable threshold**:
 
 ```python
 # rag/qa.py
-RELEVANCE_THRESHOLD = 0.35  # tunable, 在 eval 时调
+RELEVANCE_THRESHOLD = 0.35  # tunable, calibrated during eval
 
 def answer(query, pet_context):
     chunks = retrieve(query, ...)
@@ -158,149 +158,149 @@ def answer(query, pet_context):
             text="I don't have a verified answer for that — please consult a vet.",
             sources=[],
             safety_intervened=False,
-            no_retrieval=True,   # 新字段
+            no_retrieval=True,   # new field
         )
-    # 正常路径
+    # normal path
     ...
 ```
 
-**怎么调阈值**：
-- Phase 1 eval golden QA 包含 2 条**离题但合理**的 query（"how to teach my dog calculus"）
-- 跑 eval 时观察这两条的 top_score
-- 阈值取 (合理 query 的最低 top_score, 离题 query 的最高 top_score) 的中点
+**How to calibrate the threshold**:
+- The Phase 1 eval golden QA includes 2 **off-topic-but-reasonable** queries ("how to teach my dog calculus")
+- During the eval run, observe the top_score on those two
+- Set the threshold at the midpoint of (the lowest top_score for reasonable queries, the highest top_score for off-topic queries)
 
-### 触发重新决策
-- 切换 embedding 模型（score 分布会变）
-- eval 出现 "应该答的没答"（false negative）→ 调低阈值
+### Triggers to Re-decide
+- Switching the embedding model (the score distribution will shift)
+- Eval shows "should have answered but didn't" (false negative) → lower the threshold
 
-### 落地位置
-- `pawpal/rag/qa.py`：`RELEVANCE_THRESHOLD` 常量 + 短路逻辑
-- `eval/golden_qa.jsonl`：加 2–3 条"离题但合理 / 离题不合理"的边界用例
-- 单元测试：`test_qa_short_circuits_on_low_score` (mock retrieve 返回 score=0.1 的结果)
-
----
-
-## Q4 — `gpt-4o-mini` 不够用时要不要 fallback `gpt-4o`？
-
-### 背景
-默认全部用 `gpt-4o-mini`（成本 $0.15/$0.60 per 1M tokens，相比 `gpt-4o` 便宜 ~10×）。
-作业 demo 用 mini 通常够，但万一某些复杂 plan / 多步推理出问题，是否要 fallback？
-
-### 选项
-
-**A. 永远 mini**，不达标就改 prompt
-- ✅ 成本可控、reproducibility 好
-- ❌ 万一上限就是 mini 的能力上限呢？
-
-**B. mini 作默认，critic 给 confidence 低（< 0.5）时**自动重跑一次用 `gpt-4o`
-- ✅ 智能 fallback；多数请求成本不变
-- ❌ 实现 + 测试复杂；增加延迟
-
-**C. 暴露一个 `model_tier` 配置（"economy" / "quality"），用户选**
-- ✅ 给 demo 时用 quality；平时 economy
-- ❌ 多一个开关；reflection 要解释
-
-### 推荐决策
-**方案 A 优先**，**方案 C 作为备份**（仅在 Phase 4 eval 不达标时启用）：
-
-- Phase 1–3 全部 `gpt-4o-mini` 写死
-- 在 `pawpal/llm_client.py` 暴露 `model: str = "gpt-4o-mini"` 参数
-- Phase 4 §6 不达标补救路径里写明："如果 golden QA < 90%，最后手段升 `gpt-4o`，预算允许时启用"
-- **不写 critic-driven auto fallback**（方案 B），太复杂、收益不明确
-
-### 触发重新决策
-- Phase 4 跑出来 mini 数据明显不行（< 80%）
-- 教师在 demo 时质疑能力上限
-
-### 落地位置
-- `pawpal/llm_client.py`：`def chat(self, messages, model="gpt-4o-mini", ...)`
-- `eval/run_eval.py`：加 `--model` flag，方便对比 mini vs 4o
-- README 写明默认模型
+### Implementation Locations
+- `pawpal/rag/qa.py`: `RELEVANCE_THRESHOLD` constant + short-circuit logic
+- `eval/golden_qa.jsonl`: add 2–3 boundary cases ("off-topic but reasonable / off-topic and unreasonable")
+- Unit tests: `test_qa_short_circuits_on_low_score` (mock retrieve to return a result with score=0.1)
 
 ---
 
-## Q5 — Pet = "No specific pet" 时，species filter 怎么走？
+## Q4 — When `gpt-4o-mini` is not enough, should we fall back to `gpt-4o`?
 
-### 背景
-"Ask PawPal" tab 的 Pet 下拉有一项 "No specific pet"。
-`pawpal/rag/retrieve.py` 签名是 `retrieve(query, species: str | None = None)`。
-`species=None` 时 retrieve 行为没敲死。
+### Background
+By default everything runs on `gpt-4o-mini` (cost $0.15/$0.60 per 1M tokens, ~10× cheaper than `gpt-4o`).
+For the homework demo mini is usually plenty, but if some complex plans / multi-step reasoning fail, do we fall back?
 
-### 选项
+### Options
 
-**A. species=None 时，不加任何 metadata filter**（检索全库）
-- ✅ 命中最多
-- ❌ 用户问"我的狗能吃葡萄吗"但忘选 Pet → 命中可能掺杂猫 / 鸟的内容，回答可能错乱
+**A. Always mini**, and if it falls short, change the prompt
+- ✅ Cost is controlled; reproducibility is good
+- ❌ What if the ceiling really is mini's capability ceiling?
 
-**B. species=None 时，**强制要求**用户选 Pet 才能问** —— UI 上 Pet 必填
-- ✅ 干净
-- ❌ "What's a good general pet-care routine?" 这种合理问题就问不了
+**B. Mini is the default; when the critic returns low confidence (< 0.5)**, automatically retry once with `gpt-4o`
+- ✅ Smart fallback; cost is unchanged for most requests
+- ❌ Implementation + testing get complex; latency increases
 
-**C. species=None 时，只检索 `species=general` 的文档**（KB 里有一类专门写"通用宠物原则"的文档）
-- ✅ 精准；没污染
-- ❌ KB 里要专门维护 `general` 分类
+**C. Expose a `model_tier` config ("economy" / "quality") for the user to pick**
+- ✅ Use quality for demos; economy day-to-day
+- ❌ One more switch; reflection has to explain it
 
-**D. species=None 时，检索全库 + 在 prompt 里告诉 LLM "no specific pet selected, answer generally"**
-- ✅ 灵活
-- ❌ 跨物种污染风险
+### Recommended Decision
+**Option A first**, with **Option C as backup** (only enabled if the Phase 4 eval falls short):
 
-### 推荐决策
-**方案 C + 方案 A 的混合**：
+- Phases 1–3 hard-code `gpt-4o-mini` everywhere
+- Expose `model: str = "gpt-4o-mini"` as a parameter in `pawpal/llm_client.py`
+- In Phase 4 §6's "remediation when targets are missed" path, document: "if golden QA < 90%, the last resort is to upgrade to `gpt-4o`, enable when budget allows"
+- **Do not implement critic-driven auto fallback** (Option B) — too complex, unclear payoff
+
+### Triggers to Re-decide
+- Phase 4 numbers clearly show mini falling short (< 80%)
+- Instructor questions the capability ceiling during the demo
+
+### Implementation Locations
+- `pawpal/llm_client.py`: `def chat(self, messages, model="gpt-4o-mini", ...)`
+- `eval/run_eval.py`: add `--model` flag for easy mini vs 4o comparisons
+- README documents the default model
+
+---
+
+## Q5 — When Pet = "No specific pet", how should the species filter behave?
+
+### Background
+The Pet dropdown in the "Ask PawPal" tab has a "No specific pet" option.
+`pawpal/rag/retrieve.py` has the signature `retrieve(query, species: str | None = None)`.
+The behavior of retrieve when `species=None` is not yet pinned down.
+
+### Options
+
+**A. When species=None, apply no metadata filter** (search the whole KB)
+- ✅ Most hits
+- ❌ User asks "can my dog eat grapes?" but forgets to pick a Pet → hits may include cat/bird content and the answer can get muddled
+
+**B. When species=None, **require** the user to pick a Pet before asking — Pet is mandatory in the UI
+- ✅ Clean
+- ❌ A reasonable question like "What's a good general pet-care routine?" can no longer be asked
+
+**C. When species=None, only retrieve documents with `species=general`** (the KB has a class of documents specifically for "general pet principles")
+- ✅ Precise; no contamination
+- ❌ The KB needs a dedicated `general` category to maintain
+
+**D. When species=None, search the whole KB + tell the LLM in the prompt "no specific pet selected, answer generally"**
+- ✅ Flexible
+- ❌ Cross-species contamination risk
+
+### Recommended Decision
+**A blend of Option C and Option A**:
 
 ```python
 def retrieve(query, species: str | None, k: int = 4):
     if species is None:
         where = {"species": "general"}
     else:
-        # species 有值：拿这个物种 + general 通用原则
+        # species set: pull this species + general principles
         where = {"species": {"$in": [species, "general"]}}
     return chroma.query(query, where=where, n_results=k)
 ```
 
-**KB 约定**：
+**KB convention**:
 - `knowledge/general/*.md` → frontmatter `species: general`
 - `knowledge/feeding/dog_*.md` → frontmatter `species: dog`
-- 通用原则（"任何宠物都需要清洁水"）放 `general/`
-- 物种特异性内容（葡萄对狗有毒）放对应物种目录
+- General principles ("any pet needs clean water") go under `general/`
+- Species-specific content (grapes are toxic to dogs) goes under the matching species directory
 
-**UI 行为**：
-- "No specific pet" 选项保留
-- 如果 retrieve 返空 / score 低（→ Q3 路径），UI 显示 banner "💡 Tip: select a specific pet for better results"
+**UI behavior**:
+- Keep the "No specific pet" option
+- If retrieve returns empty / low score (→ Q3 path), the UI shows a banner "💡 Tip: select a specific pet for better results"
 
-### 触发重新决策
-- 用户经常 "No specific pet" 但拿不到有用回答 → 改方案 D
-- KB 里 general 文档不好维护 → 改方案 B（强制选 pet）
+### Triggers to Re-decide
+- Users frequently choose "No specific pet" but get unhelpful answers → switch to Option D
+- Maintaining `general` documents in the KB becomes painful → switch to Option B (force pet selection)
 
-### 落地位置
-- `pawpal/rag/retrieve.py`：上面的 where clause 逻辑
-- `knowledge/general/`：Phase 1 至少 2 篇通用原则文档
-- `app.py` Tab 2：retrieve 返空时显示 banner
-- 单元测试：`test_retrieve_no_species_uses_general_only`
+### Implementation Locations
+- `pawpal/rag/retrieve.py`: the where-clause logic above
+- `knowledge/general/`: at least 2 general-principle docs by Phase 1
+- `app.py` Tab 2: show the banner when retrieve returns empty
+- Unit tests: `test_retrieve_no_species_uses_general_only`
 
 ---
 
-## 决策 cheat-sheet（快速回查）
+## Decision Cheat-Sheet (Quick Reference)
 
-把上面 5 条压成一段代码可读的伪代码：
+The 5 entries above compressed into code-readable pseudocode:
 
 ```python
-# Q1: Agent scratch Owner
+# Q1: agent scratch Owner
 scratch_owner = copy.deepcopy(real_owner)
-# Apply: st.session_state.owner = scratch_owner (整体替换)
-# Discard: do nothing, GC 自动清
+# Apply: st.session_state.owner = scratch_owner (wholesale replace)
+# Discard: do nothing, GC handles it
 
-# Q2: KB 索引新鲜度
+# Q2: KB index freshness
 if max_mtime(knowledge/**/*.md) > read(.indexed_at):
     st.warning("Run rag.index --rebuild")
 
-# Q3: 零命中
+# Q3: zero hits
 if not chunks or chunks[0].score < 0.35:
     return AnswerResult(text="I don't have a verified answer...",
                         no_retrieval=True)
 
-# Q4: 模型
+# Q4: model
 default_model = "gpt-4o-mini"  # Phase 1-3
-fallback_model = "gpt-4o"      # Phase 4 不达标时手动启用
+fallback_model = "gpt-4o"      # manually enabled in Phase 4 if targets are missed
 
 # Q5: species filter
 where = ({"species": "general"} if species is None
@@ -309,34 +309,34 @@ where = ({"species": "general"} if species is None
 
 ---
 
-## 添加新问题的模板
+## Template for Adding New Questions
 
 ```markdown
-## Q? — 一句话标题
+## Q? — One-line title
 
-### 背景
-（一段，问题怎么浮出来的）
+### Background
+(One paragraph: how the question surfaced)
 
-### 选项
+### Options
 **A. ...** ✅/❌
 **B. ...** ✅/❌
 **C. ...** ✅/❌
 
-### 推荐决策
-**方案 X**：（实现要点）
+### Recommended Decision
+**Option X**: (key implementation points)
 
-### 触发重新决策
-- 条件 1
-- 条件 2
+### Triggers to Re-decide
+- Condition 1
+- Condition 2
 
-### 落地位置
-- 文件 / 函数 / 测试
+### Implementation Locations
+- File / function / test
 ```
 
 ---
 
-## 变更日志
+## Changelog
 
-| 日期 | 变更 |
+| Date | Change |
 |------|------|
-| 2026-04-26 | 初始 Q1–Q5；全部 🟡 Open |
+| 2026-04-26 | Initial Q1–Q5; all 🟡 Open |

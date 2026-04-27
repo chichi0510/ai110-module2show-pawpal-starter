@@ -1,33 +1,33 @@
 # Design & Architecture — How PawPal AI Fits Together
 
 > **Status**: Draft v1.1 (Phase 3 ✅ implemented — critic / confidence / bias / red-team)
-> **Scope**: 完整目标系统（涵盖 Phase 1–4 的全部计划）
-> **配套文档**:
-> - `docs/design/initial.md` — 总体计划与扩展方向
-> - `docs/plan/phase1.md` … `phase4.md` — Phase 1–4 落地步骤
-> - `docs/design/open_questions.md` — 5 个未决设计问题
+> **Scope**: The complete target system (covers everything planned for Phases 1–4)
+> **Companion docs**:
+> - `docs/design/initial.md` — overall plan and extension directions
+> - `docs/plan/phase1.md` … `phase4.md` — Phase 1–4 implementation steps
+> - `docs/design/open_questions.md` — 5 unresolved design questions
 >
-> 本文档回答作业 "Design and Architecture" 章节的三个问题：
-> 1. 主要组件有哪些？
-> 2. 数据如何流动（input → process → output）？
-> 3. 人 / 测试在哪些环节验证 AI 的结果？
+> This doc answers the three questions in the assignment's "Design and Architecture" section:
+> 1. What are the main components?
+> 2. How does data flow (input → process → output)?
+> 3. Where do humans / tests verify AI results?
 >
-> Phase 3 现状：critic + confidence + bias_filter + 4 个 eval section
-> 全部已实施并落入 RAG 与 Agent 主链路；UI 已加入 confidence badge
-> 与 §3.5 的 guardrail-vs-critic 优先级规则。Phase 4 仅剩"用真实 LLM
-> 跑完整 eval、写最终 reflection、固化 PNG 图"。
+> Phase 3 status: critic + confidence + bias_filter + 4 eval sections
+> are all implemented and wired into the RAG and Agent main paths; the UI now shows a confidence badge
+> and applies the §3.5 guardrail-vs-critic priority rule. Phase 4 only has "run the
+> full eval with a real LLM, write the final reflection, and lock down the PNG diagrams" left.
 >
-> 📸 **PNG 镜像**: 下面所有 mermaid 图都同步导出在 [`diagrams/`](diagrams/)，
-> commit 进 git。在不渲染 mermaid 的 viewer（Cursor 预览、IDE preview、
-> Pandoc-PDF 等）里直接点 PNG 链接看：
+> 📸 **PNG mirror**: every mermaid diagram below is also exported under [`diagrams/`](diagrams/),
+> committed to git. In viewers that don't render mermaid (Cursor preview, IDE preview,
+> Pandoc-PDF, etc.), just click the PNG link:
 > [system_overview](diagrams/system_overview.png) · [flow_rag](diagrams/flow_rag.png)
 > · [flow_agent](diagrams/flow_agent.png) · [flow_eval](diagrams/flow_eval.png)
-> · [state_layers](diagrams/state_layers.png) · [testing_checkpoints](diagrams/testing_checkpoints.png)。
-> 再生成命令见 [`diagrams/README.md`](diagrams/README.md)。
+> · [state_layers](diagrams/state_layers.png) · [testing_checkpoints](diagrams/testing_checkpoints.png).
+> Regeneration commands are in [`diagrams/README.md`](diagrams/README.md).
 
 ---
 
-## 1. 一图看懂整个系统（高层组件图）
+## 1. The Whole System at a Glance (high-level component diagram)
 
 ```mermaid
 flowchart TB
@@ -120,52 +120,52 @@ flowchart TB
     class UT,BEH,REPORTS test
 ```
 
-**怎么读这张图**：
-- 蓝色 = UI 层（用户交互）
-- 紫色 = AI 层（不确定性、需要 prompt 工程）
-- 橙色 = 规则层（确定性 Python，guardrails 和 tool wrappers）
-- 绿色 = 领域层（现有 PawPal+ 代码，不改）
-- 灰色 = 数据 / 知识 / 日志
-- 红色 = 测试 / 评估 / 人工检查点
+**How to read this diagram**:
+- Blue = UI layer (user interaction)
+- Purple = AI layer (non-deterministic, requires prompt engineering)
+- Orange = Rule layer (deterministic Python — guardrails and tool wrappers)
+- Green = Domain layer (existing PawPal+ code, untouched)
+- Gray = data / knowledge / logs
+- Red = tests / evaluation / human checkpoints
 
-**核心设计原则**：AI 层永远要经过规则层才能触达领域层（→ 图里所有从紫色到绿色的箭头都被橙色拦截）。
+**Core design principle**: the AI layer can never reach the domain layer without going through the rule layer first (→ every arrow from purple to green in the diagram is intercepted by orange).
 
 ---
 
-## 2. 主要组件 — 各自的职责
+## 2. Main Components — What Each One Does
 
-| 组件 | 类型 | 职责 | 输入 | 输出 |
+| Component | Type | Responsibility | Input | Output |
 |------|------|------|------|------|
-| **`pawpal/rag/index.py`** | 工具脚本 | 把 `knowledge/*.md` 切片 + embed + 写 ChromaDB | markdown 文件 | 向量索引 |
-| **`pawpal/rag/retrieve.py`** | Retriever | 给定 query，返回 top-k 相关 chunk | `query, species, k` | `list[Chunk]` |
+| **`pawpal/rag/index.py`** | utility script | chunks `knowledge/*.md`, embeds, and writes to ChromaDB | markdown files | vector index |
+| **`pawpal/rag/retrieve.py`** | Retriever | given a query, returns the top-k relevant chunks | `query, species, k` | `list[Chunk]` |
 | **`pawpal/rag/qa.py`** | RAG Generator | retrieve → prompt → LLM → guardrail → log | `query, pet_context` | `AnswerResult(text, sources, safety_flag)` |
-| **`agent/planner.py`** | Planner | 把用户目标拆成一个 tool-call 计划 | `user_goal, pet_context` | `Plan(steps=[...])` |
-| **`agent/executor.py`** | Executor | 按计划顺序调 tool，遇冲突回到 planner | `Plan` | `Trace` + 提交建议 |
-| **`critic/self_critique.py`** | Critic | 给一个回答 / 计划打 grounded / actionable / safe 三分 | answer + context | `CriticReport` |
-| **`critic/confidence.py`** | Aggregator | 把三分加权成 0..1 置信度 | `CriticReport` | `float` |
-| **`pawpal/guardrails/toxic_food.py`** | 规则 | toxic-food 黑名单 + 输入/输出扫描 | text + species | `list[Hit]` |
-| **`pawpal/guardrails/dangerous_meds.py`** | 规则 | 危险用药关键词检测 | text | `list[Hit]` |
-| **`pawpal/guardrails/bias_filter.py`** | 规则 | 检测「物种偏置」迹象（小宠物回答过短等） | answer + meta | `list[Warning]` |
-| **`pawpal/guardrails/input_filter.py`** | 规则 | 离题 / PII / 医疗诊断请求拦截 | query | `(allowed, reason)` |
-| **`pawpal/tools.py`** | 适配层 | 把 `Pet`/`Scheduler` 包装成 LLM function-calling 接口 | structured args | structured result |
-| **`pawpal/domain.py`** | 领域 | `Owner` / `Pet` / `Task` / `Scheduler`（现有） | — | — |
-| **`eval/run_eval.py`** | 评估器 | 跑 4 个 jsonl 数据集，输出 markdown 报告 | jsonl 文件 | `eval/reports/run_*.md` |
-| **`tests/*`** | 单元测试 | pytest 覆盖规则 + 领域 + tool 适配 | — | pass/fail |
+| **`agent/planner.py`** | Planner | breaks a user goal into a tool-call plan | `user_goal, pet_context` | `Plan(steps=[...])` |
+| **`agent/executor.py`** | Executor | runs the plan step-by-step, falls back to the planner on conflict | `Plan` | `Trace` + commit suggestion |
+| **`critic/self_critique.py`** | Critic | scores an answer / plan on grounded / actionable / safe | answer + context | `CriticReport` |
+| **`critic/confidence.py`** | Aggregator | aggregates the three scores into a 0..1 confidence | `CriticReport` | `float` |
+| **`pawpal/guardrails/toxic_food.py`** | rule | toxic-food blocklist + input/output scanning | text + species | `list[Hit]` |
+| **`pawpal/guardrails/dangerous_meds.py`** | rule | dangerous medication keyword detection | text | `list[Hit]` |
+| **`pawpal/guardrails/bias_filter.py`** | rule | detects signs of "species bias" (e.g. small pets get overly short answers) | answer + meta | `list[Warning]` |
+| **`pawpal/guardrails/input_filter.py`** | rule | blocks off-topic / PII / medical-diagnosis requests | query | `(allowed, reason)` |
+| **`pawpal/tools.py`** | adapter | wraps `Pet`/`Scheduler` as LLM function-calling interfaces | structured args | structured result |
+| **`pawpal/domain.py`** | domain | `Owner` / `Pet` / `Task` / `Scheduler` (existing) | — | — |
+| **`eval/run_eval.py`** | evaluator | runs the 4 jsonl datasets and emits a markdown report | jsonl files | `eval/reports/run_*.md` |
+| **`tests/*`** | unit tests | pytest coverage for rules + domain + tool adapters | — | pass/fail |
 
-> **关键 invariant（Phase 4 验收要复查）**：
-> - 任何 LLM 输出在显示给用户之前，**至少经过一次** `pawpal/guardrails/*.scan_text()`
-> - 任何 `add_task` 在写入 `Pet.tasks` 之前，**必须** 走 `pawpal.tools.add_task()`，而 `pawpal.tools.add_task` 内部强制调用 `pawpal.guardrails.toxic_food.scan_text`
-> - 任何 LLM 调用必须写一条 trace 到 `logs/`
+> **Key invariants (re-check during Phase 4 acceptance)**:
+> - Any LLM output **passes through at least one** `pawpal/guardrails/*.scan_text()` before being shown to the user.
+> - Any `add_task` **must** go through `pawpal.tools.add_task()` before being written to `Pet.tasks`, and `pawpal.tools.add_task` internally forces a call to `pawpal.guardrails.toxic_food.scan_text`.
+> - Every LLM call must write a trace to `logs/`.
 
 ---
 
-## 3. 数据流（input → process → output）
+## 3. Data Flow (input → process → output)
 
-系统有 **3 条主要数据流**，分别对应三种用户意图。
+The system has **3 main data flows**, one per user intent.
 
-### 3.1 流 A — RAG 知识问答（"Ask PawPal"）
+### 3.1 Flow A — RAG knowledge Q&A ("Ask PawPal")
 
-> **意图**: 用户问一个宠物护理事实问题（"我能给狗吃葡萄吗？"）
+> **Intent**: the user asks a factual pet-care question ("Can I feed my dog grapes?")
 
 ```mermaid
 sequenceDiagram
@@ -211,17 +211,17 @@ sequenceDiagram
     H->>H: read, decide if trustworthy
 ```
 
-**关键检查点（图中）**：
-- 步骤 2：input filter 拦截离题/PII —— **省 token + 防滥用**
-- 步骤 4：输入 toxic-food 拦截 —— **省 LLM 调用 + 100% 安全**
-- 步骤 9-12：critic 在 guardrail 之前打分，同步写 trace
-- 步骤 15：UI 总是同时显示答案 + 引用 + confidence + 可展开的原始 chunk —— **让用户自己判断**
+**Key checkpoints (in the diagram)**:
+- Step 2: input filter blocks off-topic / PII — **saves tokens + prevents abuse**
+- Step 4: input toxic-food block — **saves an LLM call + 100% safe**
+- Steps 9–12: critic scores before the guardrail and writes the trace at the same time
+- Step 15: the UI always shows answer + citations + confidence + an expandable raw chunk view at once — **so the user can judge for themselves**
 
 ---
 
-### 3.2 流 B — Agentic 多步规划（"Plan My Week"）
+### 3.2 Flow B — Agentic multi-step planning ("Plan My Week")
 
-> **意图**: 用户给一个目标（"给 Luna 排第一周日程"），AI 调用 `Pet.add_task` / `Scheduler.detect_time_conflicts` / `rag.qa.answer` 等 tool，迭代生成一个不冲突的计划。
+> **Intent**: the user gives a goal ("plan Luna's first week"), and the AI calls tools like `Pet.add_task` / `Scheduler.detect_time_conflicts` / `rag.qa.answer`, iterating until it produces a conflict-free plan.
 
 ```mermaid
 sequenceDiagram
@@ -286,18 +286,18 @@ sequenceDiagram
     end
 ```
 
-**关键设计点**：
-- **Plan 永远先在「scratch copy」上执行**，用户点 Apply 才提交真实状态 → 永远不会破坏现有日程
-- **Re-plan 有上限**（max_replans=3, max_steps=10）→ 防死循环
-- **每一步都进 trace** → 可解释性硬证据
-- **critic 在用户看到 plan 之前先跑** → UI 上的 confidence 不是事后补的
-- **人工审批是 mandatory** → 即便 critic 给 0.99 分，没有 user click "Apply" 也不会改 owner
+**Key design points**:
+- **Plans always run on a "scratch copy" first**, and only commit to real state when the user clicks Apply → the existing schedule can never be corrupted.
+- **Re-plans are capped** (max_replans=3, max_steps=10) → prevents infinite loops.
+- **Every step is appended to the trace** → hard evidence for explainability.
+- **The critic runs before the user sees the plan** → the confidence shown in the UI isn't tacked on after the fact.
+- **Human approval is mandatory** → even a 0.99 critic score won't change the owner without a user click on "Apply".
 
 ---
 
-### 3.3 流 C — 评估（offline，开发者用）
+### 3.3 Flow C — Evaluation (offline, developer-facing)
 
-> **意图**: 开发者跑一个数据集，看系统准确率、安全率、公平性、置信度校准。
+> **Intent**: the developer runs a dataset to inspect system accuracy, safety, fairness, and confidence calibration.
 
 ```mermaid
 flowchart LR
@@ -332,16 +332,16 @@ flowchart LR
     HUMAN -->|"sign off Phase 4 DoD"| DONE([✅ Definition of Done])
 ```
 
-**人介入的位置**：
-- 设计 jsonl 时人工写 ground truth / must_contain / must_not_contain
-- 跑完之后人工读 markdown 报告，判断哪些 fail 是 false negative、哪些是真 bug
-- 失败案例反馈到知识库（补 markdown）或 prompt（改约束）
+**Where humans step in**:
+- When designing the jsonl, a human writes the ground truth / must_contain / must_not_contain.
+- After a run, a human reads the markdown report and decides which failures are false negatives vs. real bugs.
+- Failure cases get fed back into the knowledge base (add markdown) or the prompt (tighten constraints).
 
 ---
 
-## 4. 状态管理
+## 4. State Management
 
-### 4.1 状态分层
+### 4.1 State Layers
 
 ```mermaid
 flowchart TB
@@ -351,7 +351,7 @@ flowchart TB
     classDef gone fill:#ffebee,stroke:#c62828
 
     subgraph PROCESS ["Process-lifetime (lost on restart)"]
-        SS["st.session_state.owner<br/>当前 Pets / Tasks"]:::sess
+        SS["st.session_state.owner<br/>current Pets / Tasks"]:::sess
         CACHE["@st.cache_resource<br/>Chroma client / LLM client"]:::sess
     end
 
@@ -364,7 +364,7 @@ flowchart TB
     end
 
     subgraph EPHEMERAL ["Ephemeral (intra-request only)"]
-        SCRATCH["agent scratch Owner<br/>用于预演 plan"]:::vol
+        SCRATCH["agent scratch Owner<br/>used to dry-run plans"]:::vol
         PROMPT["assembled prompt"]:::vol
     end
 
@@ -372,18 +372,18 @@ flowchart TB
     CACHE --> VEC
 ```
 
-**设计取舍**：
-- **Phase 1–3 不引入数据库** —— `Owner` 用 `st.session_state` 即可（与现有 PawPal+ 一致），降低复杂度
-- **Phase 4 stretch** 才考虑把 `Owner` 持久化到 SQLite
-- **Trace 是唯一跨会话保留的「AI 行为记录」** —— 演示和 reflection 都靠它
+**Design trade-offs**:
+- **No database in Phases 1–3** — `Owner` lives in `st.session_state` (consistent with the existing PawPal+), which keeps complexity down.
+- **Phase 4 stretch** is when we'd consider persisting `Owner` to SQLite.
+- **Traces are the only "AI behavior records" that survive across sessions** — both the demo and the reflection rely on them.
 
-### 4.2 安全 commit 模式（Agentic 路径专用）
+### 4.2 Safe-commit pattern (Agentic path only)
 
 ```
-agent.executor 永远先在「scratch Owner」上执行
+agent.executor always runs on the "scratch Owner" first
        │
        ▼
-critic 评分 + 显示给用户
+critic scores + result is shown to the user
        │
        ▼
    user click "Apply"?
@@ -395,13 +395,13 @@ commit  discard + log "rejected_by_user"
 into st.session_state.owner
 ```
 
-**为什么这么做**：避免 LLM bug 直接污染用户已有日程 —— 现有的 50 个任务不会因为一次 plan 失败而被 add 一堆乱七八糟的东西。
+**Why we do this**: it stops an LLM bug from contaminating the user's existing schedule — the 50 tasks already on file won't get a flood of garbage tasks added because of one failed plan.
 
 ---
 
-## 5. 人 / 测试在哪里检查 AI 结果
+## 5. Where Humans / Tests Verify AI Results
 
-> 作业第三个问题专门问这个 —— 答案是「**5 个检查点，从设计期到运行期到事后**」。
+> The third assignment question targets exactly this — the answer is "**5 checkpoints, spanning design-time, runtime, and post-hoc**".
 
 ```mermaid
 flowchart LR
@@ -411,8 +411,8 @@ flowchart LR
     classDef human fill:#fff8e1,stroke:#f57f17
 
     subgraph PRE ["Design-time / Pre-deployment"]
-        P1["① 单元测试<br/>tests/test_*.py<br/>(deterministic)"]:::pre
-        P2["② 行为评估<br/>eval/run_eval.py<br/>(LLM-in-loop)"]:::pre
+        P1["① Unit tests<br/>tests/test_*.py<br/>(deterministic)"]:::pre
+        P2["② Behavioral eval<br/>eval/run_eval.py<br/>(LLM-in-loop)"]:::pre
     end
 
     subgraph RT ["Runtime (per request)"]
@@ -438,28 +438,28 @@ flowchart LR
     H3 -->|"feed back"| P2
 ```
 
-| # | 检查点 | 类型 | 谁负责 | 拦截什么 |
+| # | Checkpoint | Type | Owner | What it catches |
 |---|--------|------|--------|----------|
-| ① | 单元测试 | 自动 / 设计期 | `pytest`（CI 友好） | 规则层 + 领域层的回归 bug |
-| ② | 行为评估 | 半自动 / 部署前 | `eval/run_eval.py` + 人工读报告 | 准确率下降、知识库缺口、bias、置信度漂移 |
-| ③ | Guardrails | 自动 / 运行时 | `pawpal/guardrails/*` 确定性代码 | toxic foods、危险用药、PII、离题 |
-| ④ | Self-critique | 自动 / 运行时 | `critic/*` LLM 二轮 | 引用缺失、advice 太泛、安全风险 |
-| ⑤ | 人工 Approval | 人工 / 运行时 | 终端用户 | LLM 生成的 plan 在 commit 前必看 |
-| 📂 | Trace logs | 被动 / 事后 | 开发者 grep | 异常 / 边界案例 / token 消耗 |
-| 📊 | Eval 报告 | 主动 / 事后 | 作者 review | phase-to-phase 回归、bias 趋势 |
+| ① | Unit tests | automated / design-time | `pytest` (CI-friendly) | regression bugs in the rule + domain layers |
+| ② | Behavioral eval | semi-automated / pre-deploy | `eval/run_eval.py` + human report review | accuracy regressions, KB gaps, bias, confidence drift |
+| ③ | Guardrails | automated / runtime | deterministic code in `pawpal/guardrails/*` | toxic foods, dangerous meds, PII, off-topic |
+| ④ | Self-critique | automated / runtime | second-pass LLM in `critic/*` | missing citations, vague advice, safety risks |
+| ⑤ | Human approval | manual / runtime | end user | LLM-generated plans must be reviewed before commit |
+| 📂 | Trace logs | passive / post-hoc | developer grep | anomalies / edge cases / token usage |
+| 📊 | Eval reports | active / post-hoc | author review | phase-to-phase regressions, bias trends |
 
-**关键观察**：
-- **没有任何一个 LLM 输出能跳过 ③** —— 这是「不可绕过的硬护栏」
-- **任何写操作（add_task / commit plan）必须经过 ⑤** —— 即便 critic 给满分
-- ② 和 📊 形成闭环：每个 phase 完工时跑一遍，分数下降即拒绝合并
+**Key observations**:
+- **No LLM output can skip ③** — this is the "non-bypassable hard guardrail".
+- **Any write operation (add_task / commit plan) must go through ⑤** — even with a perfect critic score.
+- ② and 📊 form a closed loop: each phase runs them at completion, and a score drop blocks the merge.
 
 ---
 
-## 6. 组件契约（接口稳定性）
+## 6. Component Contracts (interface stability)
 
-为了让 phase 之间不打架，下列接口在 Phase 1 落地后**不再修改**（只能向后兼容地扩展）：
+To keep phases from clashing, the interfaces below **are frozen** once Phase 1 lands (only backward-compatible extensions allowed):
 
-| 接口 | 签名（伪代码） | 稳定起点 |
+| Interface | Signature (pseudocode) | Frozen since |
 |------|----------------|----------|
 | `LLMClient.chat` | `chat(messages, model, **kw) -> str` | Phase 1 |
 | `LLMClient.embed` | `embed(texts, model) -> list[list[float]]` | Phase 1 |
@@ -470,20 +470,20 @@ flowchart LR
 | `agent.executor.run` | `run(goal, pet_name) -> PlanResult` | Phase 2 |
 | `critic.self_critique.review` | `review(answer, context) -> CriticReport` | Phase 3 |
 
-**Pydantic 模型**集中放在 `models.py`（Phase 1 创建），所有跨组件的数据结构都用它，避免 dict 漂移：
+**Pydantic models** are centralized in `models.py` (created in Phase 1); every cross-component data structure uses them so dicts can't drift:
 
 ```python
 class AnswerResult(BaseModel):
     text: str
     sources: list[Citation]
     safety_intervened: bool
-    confidence: float | None  # Phase 3 起填
+    confidence: float | None  # populated starting in Phase 3
     retrieved_chunks: list[Chunk]
 
 class Plan(BaseModel):
     goal: str
     steps: list[PlanStep]
-    version: int  # 每次 re-plan +1
+    version: int  # +1 on every re-plan
 
 class PlanResult(BaseModel):
     plan: Plan
@@ -494,45 +494,45 @@ class PlanResult(BaseModel):
 
 ---
 
-## 7. 跨切面关注点（Cross-cutting concerns）
+## 7. Cross-cutting concerns
 
-| 关注点 | 怎么做 | 在哪里 |
+| Concern | How | Where |
 |--------|--------|--------|
-| **Logging** | 每个 LLM 调用 + 每个 guardrail 命中写 JSONL | `logs/rag_trace.jsonl`, `logs/agent_trace.jsonl` |
-| **Error handling** | `LLMClient` 内部 retry 3 次（指数 backoff），最终失败转成 `AnswerResult(safety_intervened=True, text="服务暂不可用，请稍后")` | `pawpal/llm_client.py` |
-| **Secrets** | `.env` + `python-dotenv`，**永不入仓**；`.gitignore` 守住 | repo 根 |
-| **Reproducibility** | `requirements.txt` 钉版本；`temperature=0.2`；prompt 模板放 `agent/prompts.py` 集中管理 | 多处 |
-| **Cost control** | `gpt-4o-mini` + `text-embedding-3-small`；input 命中 guardrail 时跳过 LLM；retrieval 缓存 | `pawpal/llm_client.py` |
-| **Observability** | trace expander 在 UI 直接可见；`eval/reports/` 是 markdown 易读 | UI + `eval/` |
+| **Logging** | every LLM call + every guardrail hit writes JSONL | `logs/rag_trace.jsonl`, `logs/agent_trace.jsonl` |
+| **Error handling** | `LLMClient` retries 3 times internally (exponential backoff), and final failure is converted into `AnswerResult(safety_intervened=True, text="Service temporarily unavailable, please try again later")` | `pawpal/llm_client.py` |
+| **Secrets** | `.env` + `python-dotenv`, **never committed**; `.gitignore` enforces it | repo root |
+| **Reproducibility** | `requirements.txt` pins versions; `temperature=0.2`; prompt templates are centralized in `agent/prompts.py` | multiple places |
+| **Cost control** | `gpt-4o-mini` + `text-embedding-3-small`; skip the LLM when input hits a guardrail; cache retrievals | `pawpal/llm_client.py` |
+| **Observability** | trace expander is visible directly in the UI; `eval/reports/` is markdown-readable | UI + `eval/` |
 
 ---
 
-## 8. Phase 与本架构的对应关系
+## 8. How Phases Map to This Architecture
 
-| Phase | 本架构图中新增的部分 | 对应作业 milestone | 状态 |
+| Phase | New pieces added in this architecture | Corresponding assignment milestone | Status |
 |-------|----------------------|---------------------|------|
-| **Phase 1** | `pawpal/rag/`, `pawpal/guardrails/toxic_food`, `pawpal/guardrails/input_filter`, `pawpal/tools.py`, `pawpal/llm_client.py`, "Ask PawPal" tab, `logs/rag_trace.jsonl`, eval golden QA | RAG MVP + 1 条 guardrail | ✅ |
-| **Phase 2** | `pawpal/agent/{models,prompts,planner,executor}`, `pawpal/tools.py` 5-tool 扩展, "Plan My Week" tab, `logs/agent_trace.jsonl`, scratch-Owner commit 模式, planning_goals eval | Agentic loop | ✅ |
-| **Phase 3** | `pawpal/critic/self_critique`, `pawpal/critic/confidence`, confidence badge UI, AUROC 校准报告, `pawpal/guardrails/bias_filter`, bias_probes eval | Self-critique + Bias |
-| **Phase 4** | `eval/run_eval.py` 完整版、`docs/REFLECTION_v2.md`、demo 视频/slides、可选 SQLite 持久化 | 评估 + 文档 + 演示 |
+| **Phase 1** | `pawpal/rag/`, `pawpal/guardrails/toxic_food`, `pawpal/guardrails/input_filter`, `pawpal/tools.py`, `pawpal/llm_client.py`, "Ask PawPal" tab, `logs/rag_trace.jsonl`, golden QA eval | RAG MVP + 1 guardrail | ✅ |
+| **Phase 2** | `pawpal/agent/{models,prompts,planner,executor}`, 5-tool expansion of `pawpal/tools.py`, "Plan My Week" tab, `logs/agent_trace.jsonl`, scratch-Owner commit pattern, planning_goals eval | Agentic loop | ✅ |
+| **Phase 3** | `pawpal/critic/self_critique`, `pawpal/critic/confidence`, confidence badge UI, AUROC calibration report, `pawpal/guardrails/bias_filter`, bias_probes eval | Self-critique + Bias |
+| **Phase 4** | full `eval/run_eval.py`, `docs/REFLECTION_v2.md`, demo video / slides, optional SQLite persistence | Evaluation + docs + demo |
 
-每个 phase 的设计文档（`docs/plan/phase{1..4}.md`）会**反向引用**本文档对应章节，避免设计漂移。
+Each phase's design doc (`docs/plan/phase{1..4}.md`) **back-references** the matching section here to prevent design drift.
 
 ---
 
-## 9. 已识别的设计风险
+## 9. Identified Design Risks
 
-| 风险 | 缓解 | 验证 |
+| Risk | Mitigation | Verification |
 |------|------|------|
-| LLM 不按 `[source N]` 引用 → 可解释性失效 | Prompt 强约束 + 后处理正则；缺失即 confidence -= 0.3 | `eval/golden_qa` 检查 must_contain `[source` |
-| Agent 死循环（reach max_steps but never committed） | executor 硬限制 + critic.complete=false 时直接退出 | `eval/planning_goals` 100% 必须 ≤ 10 步 |
-| critic 给虚高分（grade inflation） | 用 golden QA 算 AUROC；< 0.7 时改 self-consistency 多采样 | Phase 3 验收 AUROC ≥ 0.75 |
-| Streamlit session_state 与 scratch Owner 不同步 | 永远 deepcopy；commit 用整体替换不增量 patch | 单元测试 `test_commit_does_not_mutate_owner_until_apply` |
-| 黑名单覆盖不全（新出现的危险食物） | 黑名单 + 后置 LLM 安全 check 双保险；季度 review | `eval/safety_redteam` 跨 phase 监控 |
+| LLM doesn't cite using `[source N]` → explainability breaks | strict prompt constraint + post-processing regex; missing citation = confidence -= 0.3 | `eval/golden_qa` checks for must_contain `[source` |
+| Agent infinite loop (reaches max_steps but never commits) | hard limit in the executor + immediate exit when critic.complete=false | `eval/planning_goals` requires 100% to finish in ≤ 10 steps |
+| Critic gives inflated scores (grade inflation) | compute AUROC against golden QA; if < 0.7, switch to self-consistency multi-sampling | Phase 3 acceptance requires AUROC ≥ 0.75 |
+| Streamlit session_state out of sync with the scratch Owner | always deepcopy; commits do whole-object replacement, never incremental patches | unit test `test_commit_does_not_mutate_owner_until_apply` |
+| Blocklist coverage gaps (newly emerging dangerous foods) | blocklist + post-hoc LLM safety check as double insurance; quarterly review | `eval/safety_redteam` monitored across phases |
 
 ---
 
-## 10. 一句话总结
+## 10. One-line Summary
 
-> **PawPal AI = (现有领域层 + 规则层确定性硬护栏) + (RAG 检索 + Agentic 规划 + Self-critique 三个 LLM 模块) + (五重检查点闭环验证)**。
-> 数据流向是单向的：用户 → UI → AI 模块 → 规则层 → 领域层；返回的每一步都打 trace、附引用、过 guardrail，且任何写操作都需要人工 Approval。
+> **PawPal AI = (existing domain layer + deterministic hard guardrails in the rule layer) + (three LLM modules: RAG retrieval + Agentic planning + Self-critique) + (a five-checkpoint closed-loop verification)**.
+> Data flows in one direction: User → UI → AI module → rule layer → domain layer; every step on the way back writes a trace, attaches citations, passes a guardrail, and any write operation requires human approval.

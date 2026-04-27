@@ -2,318 +2,318 @@
 
 > **Status**: ✅ **Executed (2026-04-27)** — median scores RAG 100% / Safety 100% /
 > Planning 90% / Bias 0.587 / AUROC 0.784. See [`../EVAL_RESULTS.md`](../EVAL_RESULTS.md).
-> **Source plan**: Draft v1.1（2026-04-26 refresh patch；与 Phase 3 v1.1 对齐）
-> **Phase goal**: 把 Phase 1–3 沉淀的所有能力**一次跑透**，产出可量化的可靠性
-> 报告；把项目文档（README、reflection、架构）升级到 portfolio 质量；准备
-> 一份 5 分钟的 demo（视频或 slides）。
-> **依赖**: Phase 1（rag）/ Phase 2（agent）/ Phase 3（critic + bias + safety_redteam + run_eval `--all`）全部就绪
-> **特点**: Phase 4 大部分是**写文档 + 跑 eval + 录 demo**，代码量接近零（仅 cleanup + 紧急补救）
+> **Source plan**: Draft v1.1 (2026-04-26 refresh patch; aligned with Phase 3 v1.1)
+> **Phase goal**: Take everything Phases 1–3 delivered and **run it through end-to-end**, producing a quantitative
+> reliability report; upgrade the project documentation (README, reflection, architecture) to portfolio quality;
+> prepare a 5-minute demo (video or slides).
+> **Depends on**: Phase 1 (rag) / Phase 2 (agent) / Phase 3 (critic + bias + safety_redteam + run_eval `--all`) all in place
+> **Character**: most of Phase 4 is **documentation + running evals + recording a demo**; near-zero new code (only cleanup + emergency rescue)
 >
-> **v1.1 patch 摘要**（相对 v1.0 的差异）：
-> 1. `safety_redteam.jsonl` 和 `run_eval.py --all` 已迁到 Phase 3（属于 eval 数据 + CLI 改动，不该堆到最后一周）
-> 2. §3.6 mermaid PNG 改"一次性生成 + 入库"，不依赖评分人有 Node.js
-> 3. §3.7 cleanup 加紧急回退开关 `PAWPAL_DISABLE_CRITIC` + lock file 拆分
-> 4. DoD 字数门槛软化为"覆盖章节"；pytest 数字明确 ≥80
-> 5. §3.9 demo 视频明确为 nice-to-have，不进 DoD
+> **v1.1 patch summary** (diff vs v1.0):
+> 1. `safety_redteam.jsonl` and `run_eval.py --all` were moved into Phase 3 (they're eval data + CLI changes; they shouldn't pile up in the last week)
+> 2. §3.6 mermaid PNGs are now "exported once and checked into git", not dependent on reviewers having Node.js
+> 3. §3.7 cleanup adds the emergency fallback switch `PAWPAL_DISABLE_CRITIC` + lock-file split
+> 4. DoD softens the word-count gate to "section coverage"; pytest count clarified as ≥80
+> 5. §3.9 demo video is explicitly nice-to-have, not part of DoD
 
 ---
 
 ## 0. Phase 4 Scope
 
-### 做（in scope）
-- ✅ **跑完整 5-section eval**（rag · safety · planning · bias · calibration），用 Phase 3 已建好的 `run_eval.py --all` 一键
-- ✅ AUROC 校准曲线 PNG **入库到 git**（`docs/design/diagrams/calibration_<date>.png`）
-- ✅ README v2（带截图、setup、how AI works）
-- ✅ `docs/REFLECTION_v2.md` —— 取代旧 `reflection.md`（已确认根目录存在）
-- ✅ `docs/DEMO_SCRIPT.md` —— 5 分钟脚本（8 步）
-- ✅ `docs/EVAL_RESULTS.md` —— 最终成绩单（数字 + 失败案例）
-- ✅ Mermaid 图**一次性导出 PNG 入库**（不依赖评分人有 Node.js）
-- ✅ `requirements.txt` 拆分：主依赖（运行）+ `requirements-eval.txt`（评估）+ `requirements-lock.txt`（精确复现）
-- ✅ 紧急回退开关（`PAWPAL_DISABLE_CRITIC`）兜底，避免 critic 拖低分数被迫保留
-- ✅ 全新机器复现测试（最关键，§3.8）
-- ✅ 最终 lint + 代码 cleanup + 删 unused
+### In scope
+- ✅ **Run the full 5-section eval** (rag · safety · planning · bias · calibration) using the `run_eval.py --all` already built in Phase 3
+- ✅ AUROC calibration curve PNG **checked into git** (`docs/design/diagrams/calibration_<date>.png`)
+- ✅ README v2 (with screenshots, setup, how AI works)
+- ✅ `docs/REFLECTION_v2.md` — replaces the old `reflection.md` (confirmed present at the project root)
+- ✅ `docs/DEMO_SCRIPT.md` — 5-minute script (8 steps)
+- ✅ `docs/EVAL_RESULTS.md` — final scorecard (numbers + failure cases)
+- ✅ Mermaid diagrams **exported to PNG once and checked in** (no dependency on reviewers having Node.js)
+- ✅ Split `requirements.txt`: main deps (runtime) + `requirements-eval.txt` (eval) + `requirements-lock.txt` (exact reproducibility)
+- ✅ Emergency fallback switch (`PAWPAL_DISABLE_CRITIC`) as a safety net so we don't get stuck with a critic that drags scores down
+- ✅ Fresh-machine reproducibility test (most critical, §3.8)
+- ✅ Final lint + code cleanup + remove unused
 
-### 可选（nice-to-have，**不进 DoD**）
-- 🎬 录 demo 视频（2–5 分钟）—— DoD 只要求 `DEMO_SCRIPT.md` 8 步可演示
-- 📊 Slides（5–8 页）—— 仅作业明确要求时才做
+### Optional (nice-to-have, **not part of DoD**)
+- 🎬 Record demo video (2–5 minutes) — DoD only requires the 8 steps in `DEMO_SCRIPT.md` to be demoable
+- 📊 Slides (5–8 pages) — only if the assignment explicitly requires them
 
-### 不做（out of scope，明确不动）
-- ❌ 任何新功能（feature freeze）
-- ❌ 重构（除非测试发现 bug）
-- ❌ 新数据集 / 新 eval section（**应在 Phase 3 完成**，到 Phase 4 才发现 = 计划失败）
-- ❌ 改 `run_eval.py` CLI 接口（**应在 Phase 3 完成**）
-- ❌ 多模态 / 语音
-- ❌ 部署到云端
+### Out of scope (explicitly off-limits)
+- ❌ Any new feature (feature freeze)
+- ❌ Refactoring (unless tests reveal a bug)
+- ❌ New datasets / new eval section (**should be done in Phase 3**; discovering it now in Phase 4 = planning failure)
+- ❌ Changing the `run_eval.py` CLI surface (**should be done in Phase 3**)
+- ❌ Multimodal / voice
+- ❌ Cloud deployment
 
 ---
 
 ## 1. Acceptance Criteria
 
-| # | 验收点 | 验证方式 |
+| # | Acceptance criterion | Verification |
 |---|--------|----------|
-| 1 | 全套 eval 一键跑通 | `python -m eval.run_eval --all`（Phase 3 §3.9 已建）输出 5 个 markdown 报告 + 1 个 calibration PNG + 1 个聚合 `final_run_<ts>.md` |
-| 2 | 报告数字达标 | golden ≥ 90% · safety ≥ 95% · bias parity ≥ 80% · planning ≥ 80% · AUROC ≥ 0.75 |
-| 3 | 全新机器能复现 | 同事 clone → 5 行命令 → 跑通 demo（任务 4.8 强制走一遍） |
-| 4 | Reflection 可读 | `REFLECTION_v2.md` 覆盖 §1–§7 七段（设计取舍 / AI 协作 / failures / bias / future / takeaway） |
-| 5 | Demo 可演示 | `DEMO_SCRIPT.md` 8 步，每步预期截图都对得上 |
-| 6 | 视觉化 | 至少 4 张 mermaid 图导出 PNG **入库** ，README + architecture.md 引用本地相对路径（GitHub 不渲染 mermaid 时也能看图） |
-| 7 | pytest 全绿 | 至少 ≥80 条单测全过（Phase 2 已 72，Phase 3 +10 ≈ 82） |
-| 8 | 紧急回退可用 | `PAWPAL_DISABLE_CRITIC=1 streamlit run app.py` 能启动且 critic 不打分（绕过 § Phase 3 §3.6） |
+| 1 | Full eval runs end-to-end in one command | `python -m eval.run_eval --all` (built in Phase 3 §3.9) outputs 5 markdown reports + 1 calibration PNG + 1 aggregated `final_run_<ts>.md` |
+| 2 | Report numbers meet the bar | golden ≥ 90% · safety ≥ 95% · bias parity ≥ 80% · planning ≥ 80% · AUROC ≥ 0.75 |
+| 3 | Reproduces on a fresh machine | A teammate clones → 5 commands → demo runs (task 4.8 forces this walk-through) |
+| 4 | Reflection is readable | `REFLECTION_v2.md` covers seven sections §1–§7 (design tradeoffs / AI collaboration / failures / bias / future / takeaway) |
+| 5 | Demo is demoable | `DEMO_SCRIPT.md` has 8 steps, each with the expected screenshot lined up |
+| 6 | Visualization | At least 4 mermaid diagrams exported to PNG and **checked in**; README + architecture.md reference local relative paths (visible even when GitHub doesn't render mermaid) |
+| 7 | pytest is fully green | At least ≥80 unit tests passing (Phase 2 has 72, Phase 3 +10 ≈ 82) |
+| 8 | Emergency fallback works | `PAWPAL_DISABLE_CRITIC=1 streamlit run app.py` boots and the critic doesn't score (bypassing § Phase 3 §3.6) |
 
 ---
 
-## 2. 模块清单
+## 2. Module checklist
 
-### 新增
+### Added
 
 ```
 docs/
-├── REFLECTION_v2.md           # 取代根目录 reflection.md
-├── EVAL_RESULTS.md            # 最终数字 + 失败明细
-├── DEMO_SCRIPT.md             # 5 分钟演示步骤
+├── REFLECTION_v2.md           # Replaces the root-level reflection.md
+├── EVAL_RESULTS.md            # Final numbers + failure detail
+├── DEMO_SCRIPT.md             # 5-minute demo walkthrough
 └── design/
-    └── diagrams/              # mermaid 导出的 PNG（git 入库，不依赖 mermaid CLI）
+    └── diagrams/              # Mermaid exports (checked in; no mermaid CLI dependency)
         ├── system_overview.png
         ├── flow_rag.png
         ├── flow_agent.png
         ├── flow_critic.png
         ├── checkpoints.png
-        └── calibration.png    # ROC 曲线（Phase 3 已生成）
+        └── calibration.png    # ROC curve (already produced in Phase 3)
 
-eval/reports/                  # 一次性产物（gitignore 即可，README 引用截图代替）
-├── final_run_<date>.md        # 5 sections 汇总（rag/safety/planning/bias/calibration）
+eval/reports/                  # One-shot artifacts (gitignored is fine; README references screenshots instead)
+├── final_run_<date>.md        # 5-section roll-up (rag/safety/planning/bias/calibration)
 ├── calibration_<date>.md
 └── ...
 
-requirements-eval.txt          # 仅评估时安装（sklearn, matplotlib）—— Phase 3 已建
-requirements-lock.txt          # pip freeze 输出，精确复现
+requirements-eval.txt          # Eval-only install (sklearn, matplotlib) — already created in Phase 3
+requirements-lock.txt          # `pip freeze` output, for exact reproducibility
 ```
 
-### 修改
+### Modified
 
 ```
-README.md                      # 全面重写（保留 PawPal+ 历史段为附录）
-reflection.md                  # 重命名 → reflection_phase2.md（历史保留）
-                                # 顶部加 banner 指向 docs/REFLECTION_v2.md
-requirements.txt               # 仅主运行依赖（streamlit / openai / chromadb / pydantic）
-                                # 主依赖用 `>=` 范围，便于后续兼容
-.env.example                   # 补 OPENAI_API_KEY / OPENAI_CHAT_MODEL / PAWPAL_DISABLE_CRITIC
-docs/design/architecture.md    # 顶部加 "本地 PNG 镜像在 diagrams/" 说明
+README.md                      # Comprehensive rewrite (keep the PawPal+ history as an appendix)
+reflection.md                  # Renamed → reflection_phase2.md (preserve history);
+                                # add a banner at the top pointing to docs/REFLECTION_v2.md
+requirements.txt               # Runtime deps only (streamlit / openai / chromadb / pydantic);
+                                # use `>=` ranges in the main deps for forward compatibility
+.env.example                   # Add OPENAI_API_KEY / OPENAI_CHAT_MODEL / PAWPAL_DISABLE_CRITIC
+docs/design/architecture.md    # Add a "local PNG mirror in diagrams/" note at the top
 ```
 
-### 删除 / 归档
+### Deleted / archived
 
 ```
-.pytest_cache/                 # 加到 .gitignore（如果还没）
-__pycache__/                   # 同上
-chroma_db/                     # 加到 .gitignore（每个开发机本地构建）
-logs/*.jsonl                   # 加到 .gitignore（运行时产物）
-任何 unused import / dead code
+.pytest_cache/                 # Add to .gitignore (if not already)
+__pycache__/                   # Same
+chroma_db/                     # Add to .gitignore (each dev box builds locally)
+logs/*.jsonl                   # Add to .gitignore (runtime artifact)
+Any unused import / dead code
 ```
 
 ---
 
-## 3. 任务分解
+## 3. Task breakdown
 
-### 任务 4.1 — Eval 完整跑（1.5 h）
-- [ ] **前置检查**：Phase 3 §3.9 任务必须已 done（`run_eval.py --all` CLI 入口存在；safety_redteam.jsonl + 50 条 golden + bias probes 都就绪）。否则**回 Phase 3 补**，不要在这里临时新建。
-- [ ] `python -m eval.run_eval --all`：依次跑 rag / safety / planning / bias / calibration
-- [ ] 输出 5 个 sub-section markdown + 1 个聚合 `final_run_<ts>.md` 到 `eval/reports/`
-- [ ] **跑 3 次**取中位数（避免单次 LLM 抖动）
-- [ ] 把 calibration ROC 曲线 PNG 复制到 `docs/design/diagrams/calibration.png` 并入 git
-- [ ] 如果某指标不达标 → 补救（见 §6）
+### Task 4.1 — Full eval run (1.5 h)
+- [ ] **Pre-check**: Phase 3 §3.9 must already be done (the `run_eval.py --all` CLI exists; safety_redteam.jsonl + 50 golden + bias probes are all in place). Otherwise **go back to Phase 3 and finish them**, don't paper over it here.
+- [ ] `python -m eval.run_eval --all`: run rag / safety / planning / bias / calibration in order
+- [ ] Output 5 sub-section markdown reports + 1 aggregated `final_run_<ts>.md` to `eval/reports/`
+- [ ] **Run 3 times and take the median** (smooths out single-run LLM jitter)
+- [ ] Copy the calibration ROC PNG to `docs/design/diagrams/calibration.png` and check it into git
+- [ ] If a metric misses the bar → mitigate (see §6)
 
-### 任务 4.2 — `docs/EVAL_RESULTS.md`（1 h）
-- [ ] 顶部一张总分表（5 个数字 + green/yellow/red 标记）
-- [ ] 每个 section 一段：用例数 / 通过率 / top-3 失败案例
-- [ ] Calibration 段：AUROC + ROC 曲线图 + 高自信失败案例
-- [ ] Bias 段：每物种平均得分柱状图（matplotlib 导 PNG）
-- [ ] 末尾"已知局限"列 ≥ 3 条
+### Task 4.2 — `docs/EVAL_RESULTS.md` (1 h)
+- [ ] One summary scoreboard at the top (5 numbers + green/yellow/red markers)
+- [ ] One paragraph per section: case count / pass rate / top-3 failure cases
+- [ ] Calibration section: AUROC + ROC curve image + high-confidence failure cases
+- [ ] Bias section: bar chart of average score per species (matplotlib PNG)
+- [ ] At the bottom, ≥ 3 known limitations
 
-### 任务 4.3 — README v2（2.5 h）—— 高价值
-- [ ] **顶部一句 pitch**（30 字内）+ Demo GIF / 截图
-- [ ] **Quick start**：5 行命令 + 截图
-- [ ] **What it does**：3 个使用场景的对话式截图（Schedule / Ask / Plan）
-- [ ] **How AI is used**：嵌入 `system_overview.png` + 3 段说明（RAG / Agent / Critic）
-- [ ] **Trustworthy by design**：guardrails + critic + human approval 段（直接讲卖点）
-- [ ] **Evaluation**：链接到 `docs/EVAL_RESULTS.md`，把 5 个核心数字搬到 README 主表
-- [ ] **Project layout**：目录树（截 phase 1 plan §2）
-- [ ] **Architecture**：链接 `docs/design/architecture.md`
+### Task 4.3 — README v2 (2.5 h) — high value
+- [ ] **Top one-sentence pitch** (within 30 words) + demo GIF / screenshot
+- [ ] **Quick start**: 5 commands + screenshots
+- [ ] **What it does**: 3 conversational screenshots for the use cases (Schedule / Ask / Plan)
+- [ ] **How AI is used**: embed `system_overview.png` + 3 paragraphs (RAG / Agent / Critic)
+- [ ] **Trustworthy by design**: guardrails + critic + human approval section (sells the value prop directly)
+- [ ] **Evaluation**: link to `docs/EVAL_RESULTS.md`; surface the 5 core numbers in the README's main table
+- [ ] **Project layout**: directory tree (lifted from phase 1 plan §2)
+- [ ] **Architecture**: link to `docs/design/architecture.md`
 - [ ] **Limitations & next steps**
-- [ ] **Acknowledgements / sources**：知识库引用列表
+- [ ] **Acknowledgements / sources**: list of knowledge-base citations
 
-### 任务 4.4 — `docs/REFLECTION_v2.md`（2 h）
-模板：
-- [ ] **§1 Problem & approach**：为什么选 RAG 而不是 fine-tune / pure LLM
-- [ ] **§2 Design tradeoffs**：3 个具体取舍
-  - "为什么不让 LLM 替代 Scheduler 做排序"
-  - "为什么 guardrails 是 Python 不是 prompt 约束"
-  - "为什么 agent 必须人工 Apply"
-- [ ] **§3 What worked / what didn't**：从 trace 里挑 2 个真实失败案例分析
-- [ ] **§4 AI collaboration in development**：哪些任务 AI 加速最大、哪些反而拖慢
-- [ ] **§5 Bias & safety reflection**：跑出来的 bias 数字诚实讨论（哪个物种最弱）
-- [ ] **§6 What I'd change next**：3 条 future work
-- [ ] **§7 Key takeaway**：一段话总结
+### Task 4.4 — `docs/REFLECTION_v2.md` (2 h)
+Template:
+- [ ] **§1 Problem & approach**: why RAG instead of fine-tuning / pure LLM
+- [ ] **§2 Design tradeoffs**: 3 concrete tradeoffs
+  - "Why we don't let the LLM replace the Scheduler for ordering"
+  - "Why guardrails live in Python rather than as prompt constraints"
+  - "Why the agent must be Apply'd by a human"
+- [ ] **§3 What worked / what didn't**: 2 real failure cases pulled from the trace
+- [ ] **§4 AI collaboration in development**: which tasks were AI-accelerated, which were AI-slowed
+- [ ] **§5 Bias & safety reflection**: discuss the bias numbers honestly (which species is weakest)
+- [ ] **§6 What I'd change next**: 3 future-work items
+- [ ] **§7 Key takeaway**: one summary paragraph
 
-### 任务 4.5 — `docs/DEMO_SCRIPT.md`（1 h）
-- [ ] 每步 3 列：操作 / 期望屏幕 / 演讲要点（30 秒内）
-- [ ] 步骤覆盖：
-  1. 启动应用（10s）
-  2. Schedule tab 加任务 —— 证明现有功能保留（30s）
-  3. Ask PawPal 问安全问题（30s）
-  4. Ask PawPal 问 toxic food → 触发 guardrail（45s）—— **高光时刻**
-  5. Plan My Week 生成计划（45s）
-  6. 制造冲突 → 看 re-plan trace（45s）—— **高光时刻**
-  7. 展开 reasoning trace + critic 评分（30s）
-  8. 总结 + 引用 `EVAL_RESULTS.md` 的 5 个数字（30s）
+### Task 4.5 — `docs/DEMO_SCRIPT.md` (1 h)
+- [ ] Each step in 3 columns: action / expected screen / talking point (within 30 seconds)
+- [ ] Steps cover:
+  1. Launch the app (10s)
+  2. Schedule tab — add a task — proves existing functionality is preserved (30s)
+  3. Ask PawPal with a safe question (30s)
+  4. Ask PawPal with a toxic-food question → guardrail fires (45s) — **highlight moment**
+  5. Plan My Week generates a plan (45s)
+  6. Trigger a conflict → see the re-plan trace (45s) — **highlight moment**
+  7. Expand the reasoning trace + critic scores (30s)
+  8. Wrap-up + reference the 5 numbers from `EVAL_RESULTS.md` (30s)
 
-### 任务 4.6 — Mermaid → PNG 一次性入库（45 min）
-**目标**：评分人 / 第三方 reviewer 不需要装 Node.js / mermaid-cli 也能看图。
+### Task 4.6 — Mermaid → PNG, exported once and checked in (45 min)
+**Goal**: reviewers / third-party readers don't need Node.js / mermaid-cli to see the diagrams.
 
-- [ ] 本地一次性安装 mermaid CLI：`npm install -g @mermaid-js/mermaid-cli`（仅本机）
-- [ ] 把 `architecture.md` 里 ≥4 张图各导出一张 PNG（`-w 1600 -b transparent`）到 `docs/design/diagrams/`
+- [ ] One-time local install of mermaid CLI: `npm install -g @mermaid-js/mermaid-cli` (local machine only)
+- [ ] Export ≥4 PNGs from `architecture.md` (`-w 1600 -b transparent`) into `docs/design/diagrams/`
   - `system_overview.png`
   - `flow_rag.png`
   - `flow_agent.png`
   - `flow_critic.png`
-  - （+ Phase 3 已生成的 `calibration.png`）
-- [ ] 同时生成 SVG 备份（`.svg` 同目录）
-- [ ] **`git add docs/design/diagrams/*.png` 全部入库**（这是关键）
-- [ ] 在 `architecture.md` 顶部加 banner：
-  > 📸 本地 PNG 镜像在 `docs/design/diagrams/`，在不渲染 mermaid 的 viewer 里点链接看
-- [ ] README v2 用相对路径引用 `docs/design/diagrams/system_overview.png` 而不是 mermaid 块（GitHub 即使不渲染 mermaid 也能看 PNG）
-- [ ] 写一行复现命令到 `docs/design/diagrams/README.md`：`mmdc -i ../architecture.md -o system_overview.png` 方便日后重生成
-- [ ] **不要把 mermaid CLI 加到 requirements 或 CI**
+  - (+ the `calibration.png` already produced in Phase 3)
+- [ ] Also generate SVG backups (`.svg` in the same folder)
+- [ ] **`git add docs/design/diagrams/*.png` to commit them all** (this is the key step)
+- [ ] Add a banner to the top of `architecture.md`:
+  > 📸 Local PNG mirror lives in `docs/design/diagrams/` — click the link in any viewer that doesn't render mermaid
+- [ ] In README v2, reference relative paths like `docs/design/diagrams/system_overview.png` instead of mermaid blocks (so PNGs show even when GitHub skips mermaid)
+- [ ] Add a one-line regen command to `docs/design/diagrams/README.md`: `mmdc -i ../architecture.md -o system_overview.png` for future regeneration
+- [ ] **Do not** add the mermaid CLI to requirements or CI
 
-### 任务 4.7 — 代码 cleanup（2 h）
-- [ ] `ruff check` / `flake8`（视用什么 linter）全绿
-- [ ] 删 unused import（`autoflake --remove-all-unused-imports -r .`）
-- [ ] 检查所有 TODO / FIXME，要么修要么写到 `EVAL_RESULTS.md` 的"已知局限"
-- [ ] **依赖三件套拆分**：
-  - `requirements.txt`：仅运行依赖（`streamlit`, `openai`, `chromadb`, `pydantic`），用 `>=` 范围
-  - `requirements-eval.txt`：仅评估依赖（`scikit-learn`, `matplotlib`），由 Phase 3 §3.9 引入
-  - `requirements-lock.txt`：`pip freeze > requirements-lock.txt` 输出，提供精确复现锁
-- [ ] `.env.example` 补：
+### Task 4.7 — Code cleanup (2 h)
+- [ ] `ruff check` / `flake8` (whichever linter we use) all green
+- [ ] Remove unused imports (`autoflake --remove-all-unused-imports -r .`)
+- [ ] Audit every TODO / FIXME — fix or move to "Known limitations" in `EVAL_RESULTS.md`
+- [ ] **Three-way dependency split**:
+  - `requirements.txt`: runtime deps only (`streamlit`, `openai`, `chromadb`, `pydantic`), `>=` ranges
+  - `requirements-eval.txt`: eval-only deps (`scikit-learn`, `matplotlib`), introduced in Phase 3 §3.9
+  - `requirements-lock.txt`: `pip freeze > requirements-lock.txt` output, exact-reproducibility lock
+- [ ] Round out `.env.example`:
   - `OPENAI_API_KEY=`
   - `OPENAI_CHAT_MODEL=gpt-4o-mini`
   - `OPENAI_EMBEDDING_MODEL=text-embedding-3-small`
-  - `PAWPAL_DISABLE_CRITIC=` （留空，紧急时设 1 关掉 critic，见 §6）
-- [ ] 验证紧急回退：`PAWPAL_DISABLE_CRITIC=1 streamlit run app.py` 启动后 critic 走 mock 回退（DoD #8）
-- [ ] 跑一遍最终 `pytest`：≥80 条全绿（DoD #7）
-- [ ] `.gitignore` 确认包含：`.pytest_cache/`、`__pycache__/`、`chroma_db/`、`logs/*.jsonl`、`eval/reports/`、`.venv/`、`.env`
+  - `PAWPAL_DISABLE_CRITIC=` (left empty; set to 1 in emergencies to disable the critic, see §6)
+- [ ] Verify the emergency fallback: `PAWPAL_DISABLE_CRITIC=1 streamlit run app.py` boots and the critic falls back to mock (DoD #8)
+- [ ] Run final `pytest`: ≥80 cases all green (DoD #7)
+- [ ] Confirm `.gitignore` includes: `.pytest_cache/`, `__pycache__/`, `chroma_db/`, `logs/*.jsonl`, `eval/reports/`, `.venv/`, `.env`
 
-### 任务 4.8 — 全新环境复现测试（30 min）—— 关键
-- [ ] 在另一个文件夹 `git clone .`
-- [ ] 严格按 README 命令走一遍
-- [ ] 任何卡住的步骤 → 立刻回头补 README
-- [ ] 测 mac + linux 各一遍（如果有条件）
+### Task 4.8 — Fresh-machine reproducibility test (30 min) — critical
+- [ ] In a separate folder, `git clone .`
+- [ ] Strictly follow the README commands
+- [ ] Any blocker → fix the README immediately
+- [ ] Test on mac + linux (if available)
 
-### 任务 4.9 — Demo 录制（**nice-to-have，不进 DoD**，1.5 h）
-- [ ] QuickTime 录屏 / OBS
-- [ ] 按 `DEMO_SCRIPT.md` 走一遍
-- [ ] 剪辑掉空白等待时间
-- [ ] 上传到 youtube unlisted / Loom，README 嵌入链接
-- [ ] 失败兜底：把 `DEMO_SCRIPT.md` 8 步各截 1 张图存 `docs/design/screenshots/`，README 当成静态 walkthrough
+### Task 4.9 — Demo recording (**nice-to-have, not part of DoD**, 1.5 h)
+- [ ] QuickTime screen capture / OBS
+- [ ] Walk through `DEMO_SCRIPT.md`
+- [ ] Trim dead air
+- [ ] Upload to YouTube unlisted / Loom; embed the link in the README
+- [ ] Failure plan: capture 1 screenshot per `DEMO_SCRIPT.md` step into `docs/design/screenshots/`; the README treats them as a static walkthrough
 
-### 任务 4.10 — Slides（**nice-to-have，仅作业要求时**，1 h）
-- [ ] 5–8 页（如果作业要求）：
+### Task 4.10 — Slides (**nice-to-have, only if the assignment requires**, 1 h)
+- [ ] 5–8 pages (if the assignment asks for slides):
   1. Problem & pitch
-  2. System overview（PNG）
+  2. System overview (PNG)
   3. RAG demo screenshot
   4. Agent demo screenshot
-  5. Trust mechanisms（guardrail / critic / approval）
-  6. Eval numbers（柱状图）
+  5. Trust mechanisms (guardrail / critic / approval)
+  6. Eval numbers (bar chart)
   7. Limitations & next steps
   8. Q&A
 
-**预计总时长：~12 h**，分布到 Week 4（最后冲刺周）。
+**Estimated total: ~12 h**, distributed across Week 4 (final sprint).
 
 ---
 
 ## 4. Definition of Done
 
-- [ ] `python -m eval.run_eval --all` 一次成功（≥3 次取中位）
-- [ ] 5 个核心指标全部达标（见 §1.2），不达标按 §6 补救
-- [ ] README v2 在 GitHub 上渲染正常（**mermaid 不显示也有 PNG fallback**）
-- [ ] 全新机器复现走完 5 行命令 + demo 8 步（任务 4.8 必做）
-- [ ] `docs/REFLECTION_v2.md` 覆盖 §1–§7 七段（**软指标，不卡字数**）
-- [ ] ≥4 张 mermaid 图导出 PNG **入库 git**（DoD #6）
-- [ ] `pytest` ≥80 条全绿（DoD #7）
-- [ ] `PAWPAL_DISABLE_CRITIC=1` 紧急回退可用（DoD #8）
-- [ ] 所有 phase plan markdown 末尾标 ✅ Done + 完成日期
-- [ ] **Demo 视频与 slides 不进 DoD**（仅作业明确要求时启用）
+- [ ] `python -m eval.run_eval --all` succeeds in one go (≥3 runs, take the median)
+- [ ] All 5 core metrics meet the bar (see §1.2); fall back to §6 if not
+- [ ] README v2 renders correctly on GitHub (**PNG fallback even when mermaid doesn't render**)
+- [ ] Fresh-machine walkthrough completes the 5 commands + 8 demo steps (task 4.8 is mandatory)
+- [ ] `docs/REFLECTION_v2.md` covers all seven sections §1–§7 (**soft criterion, no word count gate**)
+- [ ] ≥4 mermaid diagrams exported to PNG and **checked into git** (DoD #6)
+- [ ] `pytest` passes ≥80 cases (DoD #7)
+- [ ] `PAWPAL_DISABLE_CRITIC=1` emergency fallback works (DoD #8)
+- [ ] All phase plan markdowns are tagged ✅ Done with the completion date
+- [ ] **Demo video and slides are not part of DoD** (only if explicitly required by the assignment)
 
 ---
 
-## 5. 评分对照（Final Rubric Mapping）
+## 5. Final rubric mapping
 
-| Rubric 维度 | 在 Phase 4 末尾对应的证据 |
+| Rubric dimension | Evidence at the end of Phase 4 |
 |-------------|---------------------------|
 | Cohesive end-to-end AI system | README v2 + system_overview.png + Demo |
-| Modular components (retrieval/logic/agentic) | 目录结构 + architecture.md |
+| Modular components (retrieval/logic/agentic) | Directory layout + architecture.md |
 | Reliability + guardrails | `EVAL_RESULTS.md` + safety section + tests |
-| AI decision-making 可解释性 | trace expander + DEMO_SCRIPT 第 7 步 |
-| Responsible design | bias section + REFLECTION §5 |
-| Technical creativity | Plan-Execute-Critique loop 描述 |
+| Explainable AI decision-making | Trace expander + DEMO_SCRIPT step 7 |
+| Responsible design | Bias section + REFLECTION §5 |
+| Technical creativity | Description of the Plan-Execute-Critique loop |
 | Professional documentation | README + REFLECTION_v2 + DEMO_SCRIPT |
-| Stretch | calibration AUROC + bias 量化 |
+| Stretch | Calibration AUROC + bias quantification |
 
 ---
 
-## 6. 不达标补救路径
+## 6. Mitigation paths when targets are missed
 
-如果 Phase 4 跑完 eval 发现某指标不到目标：
+If running the eval in Phase 4 reveals a metric below target:
 
-| 指标 | 不达标 | 补救（按工时排序，先做最便宜的） |
+| Metric | Miss reason | Mitigation (cheapest first) |
 |------|--------|--------------------------------|
-| Golden QA < 90% | 检索召回低 | 1. 看失败案例的 query → 补对应 KB markdown（30 min/篇） |
-|  | LLM 不引用 | 2. 改强 prompt 约束（10 min） |
-|  |  | 3. 升级到 `gpt-4o`（成本×10，最后手段） |
-| Safety redteam < 95% | guardrail 漏配 | 看哪条 redteam 漏，加黑名单条目（5 min/条） |
-| Bias parity < 80% | 小宠物 KB 不足 | 补 hamster / rabbit / bird KB md（1 h/物种） |
-| Planning < 80% | re-plan 失败 | 加 prompt 例子（few-shot）；放宽 max_replans 到 5 |
-| AUROC < 0.75 | critic 校准差 | 1. Stretch: self-consistency（critic 跑 3 次取中位数）<br>2. 最坏：`PAWPAL_DISABLE_CRITIC=1` 关掉 critic，UI 仅靠 guardrail 兜底，reflection 里诚实讨论 |
-| 任意指标全失败 | LLM API 抽风 / 余额 | 1. 切回 mock client（`unset OPENAI_API_KEY`）跑离线 mock eval，至少证明管道是通的<br>2. 截图 + 时间戳留存 |
+| Golden QA < 90% | Low retrieval recall | 1. Look at failure-case queries → add the matching KB markdown (30 min/file) |
+|  | LLM doesn't cite | 2. Tighten the prompt constraint (10 min) |
+|  |  | 3. Upgrade to `gpt-4o` (cost ×10, last resort) |
+| Safety redteam < 95% | Guardrail miswired | Identify which redteam slipped through, add a blocklist entry (5 min/entry) |
+| Bias parity < 80% | Insufficient KB for small pets | Add hamster / rabbit / bird KB markdown (1 h/species) |
+| Planning < 80% | Re-plan failures | Add few-shot examples to the prompt; loosen max_replans to 5 |
+| AUROC < 0.75 | Critic poorly calibrated | 1. Stretch: self-consistency (run the critic 3 times and take the median)<br>2. Worst case: `PAWPAL_DISABLE_CRITIC=1` disables the critic; UI relies on guardrails as the safety net; reflection discusses this honestly |
+| Any metric collapses entirely | LLM API flake / quota | 1. Switch back to the mock client (`unset OPENAI_API_KEY`) and run the offline mock eval, at least proving the pipeline is functional<br>2. Capture screenshots + timestamps for the record |
 
-**补救时间预算**：留 2–3 h 作为 buffer，超出就接受当前数字 + 在 reflection 里诚实讨论。
+**Mitigation budget**: hold 2–3 h of buffer; once exhausted, accept current numbers + discuss them honestly in the reflection.
 
-> **重要**：补救应**只改 prompt / 数据 / 配置**，不改架构或新增模块。
-> 真出现"必须重构才能达标"的情况 → 接受当前数字，写进 reflection §6 future work。
+> **Important**: mitigation should **only modify prompts / data / config**, not the architecture or new modules.
+> If "we must refactor to hit the target" comes up → accept the current number and write it into reflection §6 future work.
 
 ---
 
-## 7. 风险
+## 7. Risks
 
-| 风险 | 缓解 |
+| Risk | Mitigation |
 |------|------|
-| 跑 eval 烧 token 超预算 | 用 cache（同 query 命中即跳过 LLM）；只跑 3 次取中位 |
-| 全新机器复现失败 | 任务 4.8 必做，**留出至少 30 min 缓冲** |
-| Demo 视频失败 / 嗓子哑 | 改成静态截图 walkthrough（README 友好），不进 DoD |
-| Mermaid 图在某些 viewer 不渲染 | PNG fallback（任务 4.6 已入库 git）|
-| Time-zone / 夏令时让 due_date 翻车 | 任务 4.7 时 grep `date.today()` 用法，确保都用 UTC 或同一 tz |
-| 知识库版权疑虑 | reflection §5 末尾加一段 disclaimer + source URL 列表 |
-| Phase 3 数据集没就绪就开 Phase 4 | §3.1 加了"前置检查"；如发现缺失 → **回 Phase 3 补**，不在 Phase 4 临时新建 |
-| critic 拖低分数被迫保留差实现 | `PAWPAL_DISABLE_CRITIC=1` 紧急回退（§3.7 已建）+ §6 补救路径 |
-| `pip freeze` lock file 包含本机特殊版本（如 macOS arm64 wheel） | lock file 注明"仅用于复现作者环境"；新机器先用 `requirements.txt` + `requirements-eval.txt` 安装 |
+| Eval token spend overruns budget | Use a cache (skip the LLM when the same query hits); only run 3 times and take the median |
+| Fresh-machine reproducibility fails | Task 4.8 is mandatory and **leaves at least 30 min of buffer** |
+| Demo recording fails / voice goes hoarse | Switch to a static screenshot walkthrough (README-friendly), not part of DoD |
+| Mermaid not rendered in some viewers | PNG fallback (already checked in via task 4.6) |
+| Time-zone / DST flips due_date around | During task 4.7, grep for `date.today()` usage to ensure UTC or a single tz throughout |
+| Knowledge-base copyright concerns | Add a disclaimer + source URL list at the end of reflection §5 |
+| Phase 3 dataset not ready before opening Phase 4 | §3.1 added a "pre-check"; if missing → **go back to Phase 3 and finish it**, do not patch in Phase 4 |
+| Critic drags scores down and forces us to ship a bad implementation | `PAWPAL_DISABLE_CRITIC=1` emergency fallback (already built in §3.7) + §6 mitigation paths |
+| `pip freeze` lock file pins host-specific wheels (e.g. macOS arm64) | Note in the lock file: "for reproducing the author's environment only"; new machines install via `requirements.txt` + `requirements-eval.txt` first |
 
 ---
 
-## 8. 后续（Out-of-course）改进方向
+## 8. Future (out-of-course) directions
 
-写到 REFLECTION §6，列在这里方便查：
+Captured in REFLECTION §6, listed here for convenience:
 
-- **持久化**：SQLite 替代 session_state，支持多 owner / 多设备
-- **多模态**：识别宠物照片判断品种 → 自动 species 选择
-- **真实数据集成**：FitBark / Whistle 等可穿戴 API
-- **本地 LLM**：换 Ollama + Llama 3.1，零 API 成本 + 隐私
-- **Active learning**：让用户标记"这条回答没用"，自动补 KB
-- **多语言**：知识库 + UI 中英双语
+- **Persistence**: SQLite instead of session_state, supports multi-owner / multi-device
+- **Multimodal**: identify pet breed from photos → auto-select species
+- **Real data integration**: wearable APIs like FitBark / Whistle
+- **Local LLM**: switch to Ollama + Llama 3.1, zero API cost + privacy
+- **Active learning**: let the user mark "this answer wasn't useful", auto-augment the KB
+- **Multilingual**: knowledge base + UI in both English and Chinese
 
 ---
 
-## 9. 变更日志
+## 9. Changelog
 
-| 日期 | 版本 | 变更 |
+| Date | Version | Change |
 |------|------|------|
-| 2026-04-26 | v1.0 | 初稿；feature freeze + 5 核心指标 + 不达标补救 matrix |
-| 2026-04-26 | v1.1 | refresh patch：safety_redteam / `--all` 迁到 Phase 3；mermaid PNG 一次性入库不依赖 CLI；deps 拆三件套；加 `PAWPAL_DISABLE_CRITIC` 回退开关；DoD 字数门槛软化为章节覆盖；demo 视频 / slides 明确 nice-to-have |
+| 2026-04-26 | v1.0 | Initial draft; feature freeze + 5 core metrics + miss-mitigation matrix |
+| 2026-04-26 | v1.1 | Refresh patch: safety_redteam / `--all` moved to Phase 3; mermaid PNG checked in once without CLI dependency; deps split three ways; added `PAWPAL_DISABLE_CRITIC` fallback; DoD softened from word counts to section coverage; demo video / slides explicitly nice-to-have |

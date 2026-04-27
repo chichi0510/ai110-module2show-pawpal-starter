@@ -5,7 +5,7 @@ flowchart TB
     classDef gone fill:#ffebee,stroke:#c62828
 
     subgraph PROCESS ["Process-lifetime (lost on restart)"]
-        SS["st.session_state.owner<br/>当前 Pets / Tasks"]:::sess
+        SS["st.session_state.owner<br/>current Pets / Tasks"]:::sess
         CACHE["@st.cache_resource<br/>Chroma client / LLM client"]:::sess
     end
 
@@ -18,7 +18,7 @@ flowchart TB
     end
 
     subgraph EPHEMERAL ["Ephemeral (intra-request only)"]
-        SCRATCH["agent scratch Owner<br/>用于预演 plan"]:::vol
+        SCRATCH["agent scratch Owner<br/>used to dry-run plans"]:::vol
         PROMPT["assembled prompt"]:::vol
     end
 

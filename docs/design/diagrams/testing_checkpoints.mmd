@@ -5,8 +5,8 @@ flowchart LR
     classDef human fill:#fff8e1,stroke:#f57f17
 
     subgraph PRE ["Design-time / Pre-deployment"]
-        P1["① 单元测试<br/>tests/test_*.py<br/>(deterministic)"]:::pre
-        P2["② 行为评估<br/>eval/run_eval.py<br/>(LLM-in-loop)"]:::pre
+        P1["① Unit tests<br/>tests/test_*.py<br/>(deterministic)"]:::pre
+        P2["② Behavioral eval<br/>eval/run_eval.py<br/>(LLM-in-loop)"]:::pre
     end
 
     subgraph RT ["Runtime (per request)"]

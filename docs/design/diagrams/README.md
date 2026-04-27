@@ -7,13 +7,13 @@ mermaid).
 
 | File                       | Source section in `architecture.md`         |
 |----------------------------|---------------------------------------------|
-| `system_overview.png`      | §1 一图看懂整个系统（高层组件图）           |
-| `flow_rag.png`             | §3.1 RAG 知识问答（"Ask PawPal"）           |
-| `flow_agent.png`           | §3.2 Agentic 多步规划（"Plan My Week"）     |
-| `flow_eval.png`            | §3.3 评估流（offline）                       |
-| `state_layers.png`         | §4.1 状态分层                                |
-| `testing_checkpoints.png`  | §5 人 / 测试在哪里检查 AI 结果              |
-| `calibration.png`          | (生成) `python -m eval.run_eval --section calibration` 的 ROC 曲线 — Phase 4 §4.1 |
+| `system_overview.png`      | §1 System at a glance (high-level component diagram) |
+| `flow_rag.png`             | §3.1 RAG knowledge Q&A ("Ask PawPal")        |
+| `flow_agent.png`           | §3.2 Agentic multi-step planning ("Plan My Week") |
+| `flow_eval.png`            | §3.3 Evaluation flow (offline)               |
+| `state_layers.png`         | §4.1 State layers                            |
+| `testing_checkpoints.png`  | §5 Where humans / tests verify AI output     |
+| `calibration.png`          | (generated) ROC curve from `python -m eval.run_eval --section calibration` — Phase 4 §4.1 |
 
 ## Regenerating
 
