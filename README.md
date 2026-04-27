@@ -6,8 +6,10 @@
 >
 > **📺 Loom walkthrough**: _TODO — paste recorded Loom URL here_
 > (~6 min · script in [`docs/LOOM_SCRIPT.md`](docs/LOOM_SCRIPT.md))
+> · **🃏 Model card**: [`model_card.md`](model_card.md)
 > · **🎤 Presentation outline**: [`docs/PRESENTATION.md`](docs/PRESENTATION.md)
 > · **🧰 Portfolio artifact**: [`docs/portfolio.md`](docs/portfolio.md)
+> · **🖼 Diagrams**: [`assets/diagrams/`](assets/diagrams/)
 
 ## Summary
 
