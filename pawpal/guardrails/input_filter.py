@@ -59,6 +59,29 @@ _DIAGNOSIS_PATTERNS = (
     r"\bdiagnose\b",
     r"\bwhat\s+disease\b",
     r"\bsymptom(s)?\s+of\b",
+    # Open-ended "what's wrong" or descriptions of ongoing symptoms:
+    r"\bwhat['’]?s\s+wrong\b",
+    r"\b(has|have|had|been)\s+(been\s+)?(losing|gaining|vomiting|coughing|limping|bleeding|seizing|seizuring|drooling)\b",
+)
+
+# Roleplay / jailbreak attempts. We refuse before any retrieval so the LLM
+# never sees the manipulated context.
+_JAILBREAK_PATTERNS = (
+    r"\bignore\s+(all\s+)?(previous|prior|above)\s+instructions\b",
+    r"\bpretend\s+you\s+are\b",
+    r"\bact\s+as\s+(a|an)\s+(vet|veterinarian|doctor)\b",
+    r"\broleplay\b",
+    r"\bsystem\s+prompt\b",
+)
+
+# Specific dangerous-practice queries we never want to negotiate. The user is
+# routed to a veterinarian / official guidance instead.
+_DANGEROUS_PRACTICE_PATTERNS = (
+    r"\bhot\s+car\b",
+    r"\bleave\s+(my|the|a)\s+(dog|cat|pet|puppy|kitten)\s+alone\b.*\b(hours|days)\b",
+    r"\bdeclaw(ing)?\b",
+    r"\b(debark|debarking|ear\s+crop(ping)?|tail\s+dock(ing)?)\b",
+    r"\b(starve|starving)\b.*\b(dog|cat|pet)\b",
 )
 
 # Simplified PII detectors: full SSN / phone / email patterns.
@@ -121,6 +144,32 @@ def preflight(query: str) -> PreflightResult:
                     "I can't diagnose medical conditions. If you're worried "
                     "about your pet's health, please contact a veterinarian "
                     "— they can examine the animal and run the right tests."
+                ),
+            )
+
+    for pat in _JAILBREAK_PATTERNS:
+        if re.search(pat, lowered):
+            return PreflightResult(
+                allowed=False,
+                reason="jailbreak_attempt",
+                safe_answer=(
+                    "I'm a pet-care assistant — I can only answer factual "
+                    "pet-care questions, and I'm not able to roleplay as a "
+                    "vet or override safety guardrails. Please ask a real "
+                    "veterinarian for medical advice."
+                ),
+            )
+
+    for pat in _DANGEROUS_PRACTICE_PATTERNS:
+        if re.search(pat, lowered):
+            return PreflightResult(
+                allowed=False,
+                reason="dangerous_practice",
+                safe_answer=(
+                    "I won't give advice that risks harm to your pet. "
+                    "Please never leave a pet in a hot car or in unsafe "
+                    "isolation, and discuss any procedure (declawing, "
+                    "debarking, etc.) with a licensed veterinarian first."
                 ),
             )
 

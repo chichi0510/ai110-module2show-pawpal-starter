@@ -58,9 +58,11 @@ TOXIC_FOODS_DOG: Dict[str, ToxicEntry] = {
         ToxicEntry("salt", "Large amounts of salt can cause sodium poisoning.", ("playdough", "salt water")),
         ToxicEntry("nutmeg", "Nutmeg in baking quantities causes tremors and seizures in dogs.", ()),
         ToxicEntry("hops", "Hops cause malignant hyperthermia in dogs.", ()),
-        ToxicEntry("ibuprofen", "Ibuprofen and most human NSAIDs cause stomach ulcers and kidney failure in dogs even at low doses; never give without a vet's prescription.", ("advil", "motrin", "naproxen", "aleve", "nsaid")),
+        ToxicEntry("ibuprofen", "Ibuprofen and most human NSAIDs cause stomach ulcers and kidney failure in dogs even in small amounts; never give without a vet's prescription.", ("advil", "motrin", "naproxen", "aleve", "nsaid")),
         ToxicEntry("acetaminophen", "Acetaminophen (Tylenol) is dangerous for dogs; can cause liver damage. Do not give without a vet's direction.", ("tylenol", "paracetamol")),
-        ToxicEntry("aspirin", "Aspirin can cause GI bleeding and is dosed very differently for dogs than humans; never self-prescribe.", ()),
+        ToxicEntry("aspirin", "Aspirin can cause GI bleeding in dogs; it is metabolised very differently from humans, so never self-prescribe.", ()),
+        ToxicEntry("benadryl", "Benadryl (diphenhydramine) is sometimes used in dogs but only under direct vet guidance; self-dosing risks overdose and serious side effects.", ("diphenhydramine",)),
+        ToxicEntry("melatonin", "Human melatonin products are not approved for dogs; sweeteners (xylitol) and dose mistakes make self-administering dangerous — ask a vet first.", ()),
     )
 }
 
@@ -83,6 +85,8 @@ TOXIC_FOODS_CAT: Dict[str, ToxicEntry] = {
         ToxicEntry("acetaminophen", "Acetaminophen (Tylenol) can be fatal to cats even at one tablet.", ("tylenol", "paracetamol")),
         ToxicEntry("ibuprofen", "Ibuprofen and human NSAIDs cause severe kidney damage in cats; never give without a vet.", ("advil", "motrin", "naproxen", "aleve", "nsaid")),
         ToxicEntry("aspirin", "Aspirin's metabolism in cats is dangerously slow; do not self-prescribe.", ()),
+        ToxicEntry("benadryl", "Benadryl (diphenhydramine) for cats requires vet guidance; cats are extremely sensitive to overdose.", ("diphenhydramine",)),
+        ToxicEntry("melatonin", "Human melatonin is not safe for cats without veterinary supervision; many products contain xylitol or excess dose.", ()),
         ToxicEntry("cow's milk", "Most adult cats are lactose intolerant and milk causes diarrhoea (limit, not toxic).", ("milk",)),
         ToxicEntry("raw fish", "Frequent raw fish destroys thiamine and causes neurological problems.", ()),
     )
@@ -111,19 +115,28 @@ _ALREADY_WARNING_PATTERNS = (
 
 # Hints that the user is asking whether to feed something.
 _FEEDING_INTENT_PATTERNS = (
-    r"\bcan\s+(i|my)\b.*\b(eat|feed|give|have)\b",
+    r"\bcan\s+(i|my)\b.*\b(eat|feed|give|have|use|take|administer)\b",
     r"\bis\s+it\s+(safe|ok|okay)\b.*\b(feed|give)\b",
-    r"\bsafe\s+to\s+(eat|feed|give)\b",
-    r"\bshould\s+(i|we)\s+(feed|give)\b",
+    r"\bsafe\s+to\s+(eat|feed|give|take|use)\b",
+    r"\bshould\s+(i|we)\s+(feed|give|use)\b",
     r"\bwant(s)?\s+to\s+(eat|feed)\b",
     # Third-person formulations the original list missed (revealed by eval):
     # "Can dogs eat raisins?", "Can rabbits have onion?"
-    r"\bcan\s+\w+s?\s+(eat|have|feed|drink)\b",
+    r"\bcan\s+\w+s?\s+(eat|have|feed|drink|take|use)\b",
     # "Are macadamia nuts safe for dogs?", "Is avocado safe for my parrot?",
     # "Is garlic safe for cats?"
     r"\b(safe|ok|okay|toxic|dangerous|harmful|poisonous)\s+for\b",
     # "What human pain medications are safe for my dog?"
-    r"\b(safe|ok|okay)\s+(for|to\s+(?:eat|feed|give))\b",
+    r"\b(safe|ok|okay)\s+(for|to\s+(?:eat|feed|give|take|use))\b",
+    # Bypass / minimisation phrasing -- only relevant when scan_text already
+    # found a toxic term, but cheap to include here:
+    r"\b(won't|will\s+not|wo\s*n['’]?t)\s+hurt\b",
+    r"\b(just\s+(one|a)|tiny|small\s+(amount|piece|bite|taste))\b",
+    r"\bsafely\s+(eat|have|consume|take)\b",
+    r"\bhow\s+(many|much)\b.*\b(can|should|safe)\b",
+    # Prescribing / dosing intent (covers "what dose of X for my dog").
+    r"\b(dose|dosage|mg/kg|how\s+many\s+(milligrams|mg))\b",
+    r"\bprescribe\b",
 )
 
 
