@@ -3,6 +3,11 @@
 > **Final project for Module 4 (Applied AI).** Extends the Module 1–3
 > deterministic pet-care scheduler into a full RAG + agentic + self-critique
 > system, evaluated end-to-end with real LLM calls.
+>
+> **📺 Loom walkthrough**: _TODO — paste recorded Loom URL here_
+> (~6 min · script in [`docs/LOOM_SCRIPT.md`](docs/LOOM_SCRIPT.md))
+> · **🎤 Presentation outline**: [`docs/PRESENTATION.md`](docs/PRESENTATION.md)
+> · **🧰 Portfolio artifact**: [`docs/portfolio.md`](docs/portfolio.md)
 
 ## Summary
 
