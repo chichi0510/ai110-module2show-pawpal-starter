@@ -109,11 +109,49 @@ def _load_cases(path: Path, limit: Optional[int]) -> List[dict]:
     return rows
 
 
+# Light normalisation so the keyword check is not defeated by the LLM picking
+# a numeral over a word ("2" vs "two") or a singular over a plural
+# ("meal" vs "meals"). Anything more aggressive (full lemmatisation, stemming)
+# would mask real misses, so we keep the rules small and explicit.
+_DIGIT_TO_WORD = {
+    "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four",
+    "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine",
+    "10": "ten",
+}
+_TOKEN_RE = re.compile(r"[A-Za-z0-9]+")
+
+
+def _normalise_token(tok: str) -> str:
+    t = tok.lower()
+    if t in _DIGIT_TO_WORD:
+        return _DIGIT_TO_WORD[t]
+    if len(t) > 3 and t.endswith("s") and not t.endswith("ss"):
+        return t[:-1]
+    return t
+
+
 def _keyword_hit_rate(answer_text: str, keywords: List[str]) -> float:
+    """Fraction of expected keywords that appear in the answer.
+
+    Tokens are compared after a small normalisation step:
+      - digit-words ("2" <-> "two")
+      - simple plural drop ("meals" <-> "meal")
+    Substring checks are also kept (so multi-word phrases still hit).
+    """
     if not keywords:
         return 1.0
-    hay = answer_text.lower()
-    hits = sum(1 for k in keywords if k.lower() in hay)
+    hay_tokens = {_normalise_token(t) for t in _TOKEN_RE.findall(answer_text)}
+    hay_lower = answer_text.lower()
+    hits = 0
+    for k in keywords:
+        kw = k.lower()
+        if kw in hay_lower:
+            hits += 1
+            continue
+        # token-level match after normalisation (handles "2"/"two", "meals"/"meal")
+        norm = _normalise_token(kw)
+        if norm in hay_tokens:
+            hits += 1
     return hits / len(keywords)
 
 

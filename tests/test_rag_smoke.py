@@ -12,7 +12,7 @@ import json
 import pytest
 
 from pawpal.llm_client import ChatResponse, ChatUsage, LLMClient
-from pawpal.rag.index import build_index
+from pawpal.rag import index as index_module
 from pawpal.rag.models import Chunk
 from pawpal.rag.qa import PetContext, answer
 from pawpal.rag import qa as qa_module
@@ -20,12 +20,35 @@ from pawpal.rag import retrieve as retrieve_module
 
 
 @pytest.fixture(scope="module")
-def _built_index():
-    """Build a mock-embedding index once for the whole test module."""
-    n = build_index(mock=True, verbose=False)
+def _built_index(tmp_path_factory):
+    """Build a mock-embedding index in a *temporary* directory.
+
+    Earlier versions of this fixture built straight into the project-level
+    `chroma_db/`, which destroyed any real-embedding index sitting there for
+    the eval harness. We now point all index/retrieve module globals at a
+    throw-away directory and reset Chroma's client cache so tests are
+    completely isolated from the on-disk index used by `eval/run_eval.py`.
+    """
+    tmp_chroma = tmp_path_factory.mktemp("chroma_test")
+    saved_index_dir = index_module.CHROMA_DIR
+    saved_marker = index_module.MARKER_FILE
+    saved_retrieve_dir = retrieve_module.CHROMA_DIR
+
+    index_module.CHROMA_DIR = tmp_chroma
+    index_module.MARKER_FILE = tmp_chroma / ".indexed_at"
+    retrieve_module.CHROMA_DIR = tmp_chroma
+
+    retrieve_module.reset_cache()
+    n = index_module.build_index(mock=True, verbose=False)
     assert n > 0, "knowledge corpus must yield at least one chunk"
     retrieve_module.reset_cache()
-    yield n
+    try:
+        yield n
+    finally:
+        index_module.CHROMA_DIR = saved_index_dir
+        index_module.MARKER_FILE = saved_marker
+        retrieve_module.CHROMA_DIR = saved_retrieve_dir
+        retrieve_module.reset_cache()
 
 
 @pytest.fixture(autouse=True)

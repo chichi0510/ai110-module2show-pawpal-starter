@@ -58,6 +58,9 @@ TOXIC_FOODS_DOG: Dict[str, ToxicEntry] = {
         ToxicEntry("salt", "Large amounts of salt can cause sodium poisoning.", ("playdough", "salt water")),
         ToxicEntry("nutmeg", "Nutmeg in baking quantities causes tremors and seizures in dogs.", ()),
         ToxicEntry("hops", "Hops cause malignant hyperthermia in dogs.", ()),
+        ToxicEntry("ibuprofen", "Ibuprofen and most human NSAIDs cause stomach ulcers and kidney failure in dogs even at low doses; never give without a vet's prescription.", ("advil", "motrin", "naproxen", "aleve", "nsaid")),
+        ToxicEntry("acetaminophen", "Acetaminophen (Tylenol) is dangerous for dogs; can cause liver damage. Do not give without a vet's direction.", ("tylenol", "paracetamol")),
+        ToxicEntry("aspirin", "Aspirin can cause GI bleeding and is dosed very differently for dogs than humans; never self-prescribe.", ()),
     )
 }
 
@@ -78,6 +81,8 @@ TOXIC_FOODS_CAT: Dict[str, ToxicEntry] = {
         ToxicEntry("sago palm", "Every part of the sago palm is toxic to cats; seeds are worst.", ()),
         ToxicEntry("essential oil", "Many essential oils (tea tree, peppermint, citrus, eucalyptus) are toxic to cats.", ("tea tree oil", "peppermint oil", "eucalyptus oil")),
         ToxicEntry("acetaminophen", "Acetaminophen (Tylenol) can be fatal to cats even at one tablet.", ("tylenol", "paracetamol")),
+        ToxicEntry("ibuprofen", "Ibuprofen and human NSAIDs cause severe kidney damage in cats; never give without a vet.", ("advil", "motrin", "naproxen", "aleve", "nsaid")),
+        ToxicEntry("aspirin", "Aspirin's metabolism in cats is dangerously slow; do not self-prescribe.", ()),
         ToxicEntry("cow's milk", "Most adult cats are lactose intolerant and milk causes diarrhoea (limit, not toxic).", ("milk",)),
         ToxicEntry("raw fish", "Frequent raw fish destroys thiamine and causes neurological problems.", ()),
     )
@@ -111,6 +116,14 @@ _FEEDING_INTENT_PATTERNS = (
     r"\bsafe\s+to\s+(eat|feed|give)\b",
     r"\bshould\s+(i|we)\s+(feed|give)\b",
     r"\bwant(s)?\s+to\s+(eat|feed)\b",
+    # Third-person formulations the original list missed (revealed by eval):
+    # "Can dogs eat raisins?", "Can rabbits have onion?"
+    r"\bcan\s+\w+s?\s+(eat|have|feed|drink)\b",
+    # "Are macadamia nuts safe for dogs?", "Is avocado safe for my parrot?",
+    # "Is garlic safe for cats?"
+    r"\b(safe|ok|okay|toxic|dangerous|harmful|poisonous)\s+for\b",
+    # "What human pain medications are safe for my dog?"
+    r"\b(safe|ok|okay)\s+(for|to\s+(?:eat|feed|give))\b",
 )
 
 
