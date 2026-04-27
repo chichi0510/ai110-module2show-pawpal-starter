@@ -13,14 +13,24 @@
 
 ## Before you hit Record
 
+- [ ] **Activate `.venv` in every terminal you'll touch** — `source .venv/bin/activate`. The shell prompt should read `(.venv)`, **not** `(base)`. If it says `(base)`, conda is hijacking your shell and `chromadb` / `streamlit` will not be found.
 - [ ] `.env` has a real `OPENAI_API_KEY`
 - [ ] `python -m pawpal.rag.index --rebuild` finished (real embeddings)
-- [ ] `streamlit run app.py` is running on `http://localhost:8501`
+- [ ] `streamlit run app.py` is running on `http://localhost:8501` — and **the terminal that's running it has `(.venv)` in its prompt**
 - [ ] Sidebar: owner = **Alice**, pets = **Mochi (cat, 3)** and **Echo (dog, 2)**
 - [ ] **Echo has zero tasks** so the agent demo shows a fresh plan
 - [ ] Second tab open with [`docs/EVAL_RESULTS.md`](EVAL_RESULTS.md)
-- [ ] Terminal in the project root, `.venv` activated, ready to type
+- [ ] **A second terminal also in `.venv`**, ready to run `python -m eval.run_eval --section safety --limit 5` for the eval section
 - [ ] Loom set to **screen + camera bubble**, mic checked
+
+> **Quick sanity check before recording.** Run this once in the
+> terminal you'll use on camera; if either line errors, you're in
+> the wrong environment:
+>
+> ```bash
+> python -c "import chromadb, streamlit, openai; print('env OK')"
+> python -m eval.run_eval --section safety --limit 1   # should pass
+> ```
 
 ---
 
@@ -30,12 +40,12 @@
 
 > *(Camera on, Streamlit visible.)*
 >
-> "Hey, I'm Chichi. This is **PawPal AI**, my Module 4 final project.
-> The starting point was **PawPal+** — that was my deterministic
-> pet-care scheduler from Modules 1 through 3. For Module 4 I added
+> "Hey, I'm Chichi. This is **PawPal AI**, my final project.
+> The starting point was hw2 — that was the deterministic
+> pet-care scheduler. I added
 > three AI features on top of it: a RAG question-answer system, an
-> agent that plans your week for you, and a self-critic that scores
-> every answer. Let me show you all three. About six minutes."
+> agent that plans week for pets, and a self-critic that scores
+> every answer. Let me show you all these functions."
 
 ---
 
@@ -44,10 +54,9 @@
 > *(Hover the three tabs.)*
 >
 > "OK so three tabs. The first one, **Schedule**, that's the original
-> Module 1–3 app — still here, untouched. The second one,
+> setting — still here, untouched. The second one,
 > **Ask PawPal**, that's the RAG question-answer. And the third one,
-> **Plan My Week**, that's the agent. In the sidebar I've already set
-> up Mochi the cat and Echo the dog. Let's go."
+> **Plan My Week**. Let's go."
 
 ---
 
@@ -63,7 +72,7 @@
 > guardrails check it for off-topic stuff, anything dangerous, any
 > jailbreak attempts. Then we go to the vector database, pull the
 > top chunks from our knowledge base — filtered by species, so for
-> Echo it's only the dog content. The LLM writes the answer with
+> David it's only the dog content. The LLM writes the answer with
 > citations. The guardrails run again on the output. And then the
 > self-critic scores it."
 >
@@ -73,12 +82,12 @@
 > roughly twelve hours apart'** — and there's a numbered citation
 > right there pointing at the dog feeding doc in our knowledge base.
 > Below the answer there's a **green badge** — that's the critic
-> saying it's high-confidence. Let me expand the trace real quick."
+> saying it's high-confidence."
 >
 > *(Click **Reasoning trace** expander, scroll briefly, close.)*
 >
 > "You can see the chunks it retrieved, the scores, and the
-> per-axis breakdown from the critic. Cool, on to the next one."
+> per-axis breakdown from the critic."
 
 ---
 
