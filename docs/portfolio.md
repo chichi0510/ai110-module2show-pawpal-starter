@@ -11,7 +11,7 @@
 | | |
 |---|---|
 | **Repository** | https://github.com/chichi0510/ai110-module2show-pawpal-starter |
-| **Live demo (Loom walkthrough)** | _TODO: paste Loom URL here after recording_ |
+| **Live demo (Loom walkthrough)** | https://www.loom.com/share/daa28affbbf94c60ac6a70e01837bc9f |
 | **Course** | CodePath AI-110 — Module 4 Final Project (Applied AI) |
 | **Original project** | PawPal+ (Modules 1–3, deterministic Python scheduler) |
 

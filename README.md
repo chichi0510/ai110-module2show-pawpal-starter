@@ -4,7 +4,7 @@
 > deterministic pet-care scheduler into a full RAG + agentic + self-critique
 > system, evaluated end-to-end with real LLM calls.
 >
-> **📺 Loom walkthrough**: _TODO — paste recorded Loom URL here_
+> **📺 Loom walkthrough**: https://www.loom.com/share/daa28affbbf94c60ac6a70e01837bc9f
 > (~6 min · script in [`docs/LOOM_SCRIPT.md`](docs/LOOM_SCRIPT.md))
 > · **🃏 Model card**: [`model_card.md`](model_card.md)
 > · **🎤 Presentation outline**: [`docs/PRESENTATION.md`](docs/PRESENTATION.md)

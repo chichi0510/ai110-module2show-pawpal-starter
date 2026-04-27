@@ -157,7 +157,7 @@ trailing question. This is the *take-home* line.
 ## Slide 9 — Q&A / links (15 s buffer)
 
 - **Repo**: github.com/chichi0510/ai110-module2show-pawpal-starter
-- **Loom walkthrough**: _TODO_
+- **Loom walkthrough**: https://www.loom.com/share/daa28affbbf94c60ac6a70e01837bc9f
 - **Eval results**: `docs/EVAL_RESULTS.md`
 - **Reflection + ethics rubric**: `docs/REFLECTION_v2.md` §8
 
