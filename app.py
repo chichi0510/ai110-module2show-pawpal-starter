@@ -21,7 +21,173 @@ _CONFIDENCE_BLURB = {
     "low": "Low confidence — please consult a vet",
 }
 
-st.set_page_config(page_title="PawPal AI", page_icon="🐾", layout="wide")
+st.set_page_config(
+    page_title="PawPal AI",
+    page_icon="🐾",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+
+# ---------------------------------------------------------------- visual style
+
+_PAWPAL_CSS = """
+<style>
+:root {
+    --pawpal-orange: #F77F00;
+    --pawpal-orange-soft: #FCB85B;
+    --pawpal-orange-tint: #FDF1E1;
+    --pawpal-cream: #FFFBF5;
+    --pawpal-ink: #2A1810;
+    --pawpal-mid: #6B4F3B;
+    --pawpal-border: rgba(247,127,0,0.18);
+    --pawpal-shadow: 0 1px 3px rgba(42,24,16,0.06), 0 4px 14px rgba(42,24,16,0.04);
+}
+
+/* hero banner */
+.pawpal-hero {
+    background: linear-gradient(135deg, #F77F00 0%, #FCB85B 100%);
+    color: #fff;
+    padding: 1.6rem 2rem 1.4rem;
+    border-radius: 18px;
+    margin-bottom: 1.2rem;
+    box-shadow: var(--pawpal-shadow);
+}
+.pawpal-hero h1 {
+    color: #fff !important;
+    margin: 0 0 0.3rem 0 !important;
+    font-size: 2.4rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em;
+}
+.pawpal-hero .pawpal-subtitle {
+    color: rgba(255,255,255,0.95);
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+.pawpal-hero .pawpal-pill-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+    flex-wrap: wrap;
+}
+.pawpal-hero-pill {
+    background: rgba(255,255,255,0.22);
+    color: #fff;
+    padding: 0.32rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.86rem;
+    font-weight: 500;
+    backdrop-filter: blur(6px);
+}
+
+/* tabs */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0.4rem;
+    border-bottom: 2px solid var(--pawpal-orange-tint);
+}
+.stTabs [data-baseweb="tab"] {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.55rem 1.2rem;
+    border-radius: 10px 10px 0 0;
+    color: var(--pawpal-mid);
+}
+.stTabs [aria-selected="true"] {
+    color: var(--pawpal-orange) !important;
+    background: var(--pawpal-orange-tint);
+}
+
+/* generic card */
+.pawpal-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 1.1rem 1.3rem;
+    border: 1px solid var(--pawpal-border);
+    box-shadow: var(--pawpal-shadow);
+    margin: 0.6rem 0 0.8rem;
+}
+
+/* confidence pills */
+.pawpal-pill {
+    display: inline-block;
+    padding: 0.28rem 0.8rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.92rem;
+    margin-right: 0.4rem;
+}
+.pawpal-pill-high   { background: #E8F5E9; color: #1B5E20; border: 1px solid #66BB6A; }
+.pawpal-pill-medium { background: #FFF8E1; color: #B7791F; border: 1px solid #F2C94C; }
+.pawpal-pill-low    { background: #FFEBEE; color: #B71C1C; border: 1px solid #EF5350; }
+.pawpal-pill-meta   { color: var(--pawpal-mid); font-size: 0.85rem; font-style: italic; }
+.pawpal-pill-axes   { color: var(--pawpal-mid); font-size: 0.82rem; font-family: ui-monospace, monospace; }
+
+/* source citations */
+.pawpal-source {
+    background: var(--pawpal-orange-tint);
+    padding: 0.45rem 0.75rem;
+    border-radius: 10px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 0.85rem;
+    margin: 0.25rem 0;
+    border-left: 3px solid var(--pawpal-orange);
+    color: var(--pawpal-ink);
+}
+
+/* primary buttons */
+.stButton > button[kind="primary"] {
+    background: var(--pawpal-orange);
+    border: 0;
+    font-weight: 600;
+    padding: 0.55rem 1.3rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(247,127,0,0.25);
+    transition: all 0.15s ease;
+}
+.stButton > button[kind="primary"]:hover {
+    background: #E66F00;
+    box-shadow: 0 3px 10px rgba(247,127,0,0.35);
+    transform: translateY(-1px);
+}
+
+/* sidebar */
+[data-testid="stSidebar"] {
+    background: var(--pawpal-cream);
+    border-right: 1px solid var(--pawpal-border);
+}
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 { color: var(--pawpal-ink); }
+
+/* forms / inputs */
+.stTextInput input, .stTextArea textarea, .stSelectbox > div > div {
+    border-radius: 10px !important;
+}
+
+/* dataframes */
+[data-testid="stDataFrame"] {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--pawpal-border);
+}
+
+/* tighten heading spacing */
+h2 { margin-top: 1.1rem !important; }
+h3 { margin-top: 0.9rem !important; }
+
+/* metric tiles in sidebar */
+[data-testid="stSidebar"] [data-testid="stMetric"] {
+    background: #fff;
+    border-radius: 10px;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--pawpal-border);
+}
+</style>
+"""
+
+st.markdown(_PAWPAL_CSS, unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------- session
@@ -57,27 +223,68 @@ def _tasks_due_on(day: date) -> list[Task]:
     return [t for t in owner.get_all_tasks() if t.due_date == day]
 
 
-# ---------------------------------------------------------------- header
+# ---------------------------------------------------------------- sidebar
 
-st.title("🐾 PawPal AI")
-st.caption(
-    "**Schedule** is the original PawPal+ planner. "
-    "**Ask PawPal** runs Retrieval-Augmented answers with toxic-food guardrails. "
-    "**Plan My Week** uses an agent loop (plan → tool calls → re-plan) to draft "
-    "a multi-task schedule you review before applying."
-)
+with st.sidebar:
+    st.markdown("## 🐾 PawPal AI")
+    st.caption("Module 4 final project · CodePath AI-110")
 
-with st.expander("About this app", expanded=False):
-    st.markdown(
-        """
-- **Domain layer** (`pawpal/domain.py`): unchanged from PawPal+.
-- **AI layer** (`pawpal/rag/`, `pawpal/guardrails/`, `pawpal/agent/`):
-  RAG, deterministic toxic-food guardrails, and a Plan-Execute-Replan
-  agent loop wrapped around the same domain objects.
-- **Traces**: each Ask PawPal call writes to `logs/rag_trace.jsonl`; each
-  Plan My Week run writes to `logs/agent_trace.jsonl`.
-"""
+    n_pets = len(owner.pets)
+    n_today = len(
+        [t for p in owner.pets for t in p.tasks if t.due_date == date.today()]
     )
+
+    sb1, sb2 = st.columns(2)
+    sb1.metric("Pets", n_pets)
+    sb2.metric("Tasks today", n_today)
+
+    st.divider()
+
+    st.markdown("**📺 Live demo**")
+    st.markdown(
+        "[Loom walkthrough (~6 min)](https://www.loom.com/share/daa28affbbf94c60ac6a70e01837bc9f)"
+    )
+    st.markdown("**🐙 Source code**")
+    st.markdown(
+        "[chichi0510/...pawpal-starter](https://github.com/chichi0510/ai110-module2show-pawpal-starter)"
+    )
+    st.markdown("**📊 Eval results**")
+    st.caption(
+        "Median (n=3, gpt-4o-mini): RAG **100%** · Safety **100%** · "
+        "Plan **90%** · AUROC **0.78** · 103/103 unit tests."
+    )
+
+    st.divider()
+    with st.expander("How the layers fit", expanded=False):
+        st.markdown(
+            """
+- **Domain** (`pawpal/domain.py`) — unchanged Module 1–3 scheduler.
+- **RAG** (`pawpal/rag/`) — Ask PawPal tab.
+- **Agent** (`pawpal/agent/`) — Plan My Week tab.
+- **Guardrails** (`pawpal/guardrails/`) — deterministic, outside the LLM.
+- **Critic** (`pawpal/critic/`) — calibrated confidence on every output.
+- **Logs** — `logs/rag_trace.jsonl`, `logs/agent_trace.jsonl`.
+"""
+        )
+
+
+# ---------------------------------------------------------------- hero
+
+st.markdown(
+    """
+<div class="pawpal-hero">
+  <h1>🐾 PawPal AI</h1>
+  <p class="pawpal-subtitle">A reliability-first pet-care assistant — RAG, agentic planning, and a self-critic on top of a deterministic scheduler.</p>
+  <div class="pawpal-pill-row">
+    <span class="pawpal-hero-pill">📅 Schedule</span>
+    <span class="pawpal-hero-pill">🤖 Ask PawPal · RAG</span>
+    <span class="pawpal-hero-pill">🧠 Plan My Week · Agent</span>
+    <span class="pawpal-hero-pill">🛡️ Guardrails + Self-critic</span>
+  </div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
 
 scheduler = Scheduler(owner)
 
@@ -92,6 +299,19 @@ tab_schedule, tab_ask, tab_plan = st.tabs(
 # ============================================================ TAB: Schedule
 
 with tab_schedule:
+    overview_cols = st.columns(4)
+    overview_cols[0].metric("Owner", owner.name or "—")
+    overview_cols[1].metric("Pets", len(owner.pets))
+    overview_cols[2].metric(
+        "Total tasks", sum(len(p.tasks) for p in owner.pets)
+    )
+    overview_cols[3].metric(
+        "Tasks today",
+        len([t for p in owner.pets for t in p.tasks if t.due_date == date.today()]),
+    )
+
+    st.divider()
+
     st.subheader("Owner")
     owner.name = st.text_input("Owner name", value=owner.name)
 
@@ -269,25 +489,38 @@ def _render_kb_warning() -> None:
         )
 
 
-def _render_confidence_badge_rag(critic: dict | None) -> str | None:
-    """Return a one-line markdown badge for a RAG critic, or None if unavailable."""
+def _confidence_pill_html(
+    critic: dict | None,
+    axes: tuple[str, ...] = ("grounded", "actionable", "safe"),
+    label: str = "Confidence",
+) -> str | None:
+    """HTML pill for the critic — same data, prettier shell."""
     if not critic:
         return None
     level = critic.get("level", "low")
     emoji = _CONFIDENCE_EMOJI.get(level, "⚪")
     blurb = _CONFIDENCE_BLURB.get(level, "")
-    confidence = critic.get("confidence", 0.0)
+    confidence = float(critic.get("confidence", 0.0))
     score = critic.get("score") or {}
     score_bits = " · ".join(
-        f"{k}={float(score[k]):.2f}"
-        for k in ("grounded", "actionable", "safe")
-        if k in score
+        f"{k}={float(score[k]):.2f}" for k in axes if k in score
     )
-    suffix = " (offline mock)" if critic.get("is_mock") else ""
-    return (
-        f"{emoji} **Confidence: {level}** ({confidence:.2f}) — {blurb}{suffix}\n\n"
-        f"_{score_bits}_"
+    suffix = " · offline mock" if critic.get("is_mock") else ""
+    pill = (
+        f'<span class="pawpal-pill pawpal-pill-{level}">'
+        f"{emoji} {label}: {level.upper()} · {confidence:.2f}"
+        f"</span>"
     )
+    meta = f'<span class="pawpal-pill-meta">{blurb}{suffix}</span>'
+    axes_line = (
+        f'<div class="pawpal-pill-axes">{score_bits}</div>' if score_bits else ""
+    )
+    return f"<div>{pill}{meta}</div>{axes_line}"
+
+
+def _render_confidence_badge_rag(critic: dict | None) -> str | None:
+    """Backwards-compatible alias kept for tests/external callers."""
+    return _confidence_pill_html(critic, ("grounded", "actionable", "safe"))
 
 
 def _render_bias_banner(warnings: list[dict]) -> None:
@@ -316,23 +549,24 @@ def _render_answer(result: AnswerResult) -> None:
     else:
         level = (result.critic or {}).get("level", "medium")
         if badge:
-            if level == "low":
-                st.error(badge)
-            elif level == "medium":
-                st.warning(badge)
-            else:
-                st.success(badge)
+            st.markdown(badge, unsafe_allow_html=True)
         if level == "low":
             with st.expander(
                 "Show low-confidence answer (consult a vet before acting)",
                 expanded=False,
             ):
-                st.markdown(result.text)
+                st.markdown(
+                    f'<div class="pawpal-card">{result.text}</div>',
+                    unsafe_allow_html=True,
+                )
                 notes = (result.critic or {}).get("notes", "")
                 if notes:
                     st.caption(f"Critic notes: {notes}")
         else:
-            st.markdown(result.text)
+            st.markdown(
+                f'<div class="pawpal-card">{result.text}</div>',
+                unsafe_allow_html=True,
+            )
             notes = (result.critic or {}).get("notes", "")
             if level == "medium" and notes:
                 st.caption(f"Critic notes: {notes}")
@@ -343,8 +577,15 @@ def _render_answer(result: AnswerResult) -> None:
     if result.sources:
         st.markdown("**Sources**")
         for c in result.sources:
-            head = f" — _{c.heading}_" if c.heading else ""
-            st.markdown(f"- `[{c.n}]` `{c.source_path}`{head}")
+            head = (
+                f' &nbsp;<span style="color:#6B4F3B;">— {c.heading}</span>'
+                if c.heading
+                else ""
+            )
+            st.markdown(
+                f'<div class="pawpal-source">[{c.n}] {c.source_path}{head}</div>',
+                unsafe_allow_html=True,
+            )
 
     if result.retrieved_chunks:
         with st.expander("🔍 Show retrieved sources (raw chunks)", expanded=False):
@@ -450,23 +691,11 @@ def _row_color(row: dict) -> str:
 
 
 def _render_confidence_badge_plan(critic: dict | None) -> str | None:
-    """One-line markdown badge for a Plan critic (axes: complete/specific/safe)."""
-    if not critic:
-        return None
-    level = critic.get("level", "low")
-    emoji = _CONFIDENCE_EMOJI.get(level, "⚪")
-    blurb = _CONFIDENCE_BLURB.get(level, "")
-    confidence = critic.get("confidence", 0.0)
-    score = critic.get("score") or {}
-    score_bits = " · ".join(
-        f"{k}={float(score[k]):.2f}"
-        for k in ("complete", "specific", "safe")
-        if k in score
-    )
-    suffix = " (offline mock)" if critic.get("is_mock") else ""
-    return (
-        f"{emoji} **Plan confidence: {level}** ({confidence:.2f}) — {blurb}{suffix}\n\n"
-        f"_{score_bits}_"
+    """One-line styled badge for a Plan critic (axes: complete/specific/safe)."""
+    return _confidence_pill_html(
+        critic,
+        ("complete", "specific", "safe"),
+        label="Plan confidence",
     )
 
 
@@ -559,16 +788,12 @@ with tab_plan:
             # diff to make an informed Apply / Discard decision.
             plan_badge = _render_confidence_badge_plan(plan_result.critic)
             if plan_badge:
+                st.markdown(plan_badge, unsafe_allow_html=True)
                 level = (plan_result.critic or {}).get("level", "medium")
                 if level == "low":
-                    st.error(plan_badge)
                     notes = (plan_result.critic or {}).get("notes", "")
                     if notes:
                         st.caption(f"Critic notes: {notes}")
-                elif level == "medium":
-                    st.warning(plan_badge)
-                else:
-                    st.success(plan_badge)
 
             preview = _plan_preview_rows(plan_result)
             if preview:
@@ -640,8 +865,15 @@ with tab_plan:
 
 
 st.divider()
-st.caption(
-    "CLI demo: `python main.py` · "
-    "Tests: `python -m pytest` · "
-    "Reindex KB: `python -m pawpal.rag.index --rebuild`"
+st.markdown(
+    """
+<div style="text-align:center; color: var(--pawpal-mid); font-size: 0.85rem;
+            padding: 0.5rem 0 1rem;">
+  Built on the Module 1–3 PawPal+ scheduler ·
+  CLI demo: <code>python main.py</code> ·
+  Tests: <code>python -m pytest</code> ·
+  Reindex KB: <code>python -m pawpal.rag.index --rebuild</code>
+</div>
+""",
+    unsafe_allow_html=True,
 )
