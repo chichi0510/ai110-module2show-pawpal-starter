@@ -336,6 +336,10 @@ Three things crystallised over the four phases:
 
 A longer write-up — including the failure cases that drove these
 lessons — is in [`docs/REFLECTION_v2.md`](docs/REFLECTION_v2.md).
+Explicit answers to the Module 4 reflection-and-ethics rubric questions
+(limitations / misuse / what surprised me / one helpful + one flawed
+AI suggestion) live in
+[§8 of that document](docs/REFLECTION_v2.md#8-module-4-reflection-and-ethics-rubric--explicit-answers).
 
 ---
 
